@@ -1,0 +1,19 @@
+packages:
+  "uuid": "For generating owner tokens"
+  "@types/uuid": "Types for uuid"
+  "date-fns": "For formatting dates"
+  "framer-motion": "For page transitions and animations"
+  "react-hook-form": "Form handling"
+  "@hookform/resolvers": "Form validation"
+  "zod": "Schema validation"
+  "lucide-react": "Icons"
+
+images:
+  - path: "artifacts/aarrr-dashboard/public/images/hero-bg.png"
+    description: "Soft warm light purple pastel gradient mesh background, abstract modern clean aesthetic, minimal"
+    aspect_ratio: "16:9"
+
+notes:
+  - API base is /api
+  - TanStack Query v5 is used
+  - Wouter is used for routing
