@@ -6,10 +6,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Printer, Edit3, Trash2,
-  TrendingDown, TrendingUp, Minus,
   AlertTriangle, CheckCircle, Info,
-  Lightbulb, StickyNote, BarChart3,
-  Target, Zap
+  Lightbulb, BarChart2, Zap, Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -31,11 +29,12 @@ export function DashboardDetail() {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="space-y-6 animate-pulse max-w-4xl mx-auto">
+        <div className="space-y-6 animate-pulse max-w-5xl mx-auto">
           <div className="h-8 bg-muted rounded-lg w-1/3" />
-          <div className="h-48 bg-muted rounded-2xl w-full" />
-          <div className="grid grid-cols-3 gap-4">
-            {[1,2,3].map(i => <div key={i} className="h-24 bg-muted rounded-2xl" />)}
+          <div className="h-12 bg-muted rounded-xl w-full" />
+          <div className="grid grid-cols-2 gap-6">
+            <div className="h-80 bg-muted rounded-2xl" />
+            <div className="h-80 bg-muted rounded-2xl" />
           </div>
         </div>
       </MainLayout>
@@ -57,7 +56,6 @@ export function DashboardDetail() {
     });
   };
 
-  // Compute derived values per stage
   const enrichedStages = stages.map((stage, idx) => {
     const prev = stages[idx - 1];
     const val = stage.metricValue ?? 0;
@@ -71,58 +69,58 @@ export function DashboardDetail() {
 
   const firstStage = enrichedStages[0];
   const lastStage = enrichedStages[enrichedStages.length - 1];
-  const totalConvRate = firstStage._val > 0 ? Number(((lastStage._val / firstStage._val) * 100).toFixed(1)) : null;
+  const totalConvRate = firstStage?._val > 0 ? Number(((lastStage._val / firstStage._val) * 100).toFixed(1)) : null;
 
-  // Find worst stage (highest drop-off)
-  const worstStage = enrichedStages.slice(1).reduce<typeof enrichedStages[number] | null>((worst, s) => {
-    if (s._drop == null) return worst;
-    if (worst == null || (s._drop ?? 0) > (worst._drop ?? 0)) return s;
-    return worst;
+  const worstStage = enrichedStages.slice(1).reduce<typeof enrichedStages[number] | null>((w, s) => {
+    if (s._drop == null) return w;
+    return (w == null || (s._drop ?? 0) > (w._drop ?? 0)) ? s : w;
   }, null);
+  const worstIdx = worstStage ? enrichedStages.indexOf(worstStage) : -1;
 
-  // Find best converting stage (lowest drop-off, not first)
-  const bestStage = enrichedStages.slice(1).reduce<typeof enrichedStages[number] | null>((best, s) => {
-    if (s._drop == null) return best;
-    if (best == null || (s._drop ?? 100) < (best._drop ?? 100)) return s;
-    return best;
+  const bestStage = enrichedStages.slice(1).reduce<typeof enrichedStages[number] | null>((b, s) => {
+    if (s._drop == null) return b;
+    return (b == null || (s._drop ?? 100) < (b._drop ?? 100)) ? s : b;
   }, null);
+  const bestIdx = bestStage ? enrichedStages.indexOf(bestStage) : -1;
 
-  const getStageColor = (drop: number | null) => {
-    if (drop == null) return { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", badge: "bg-blue-100 text-blue-700" };
-    if (drop >= 50) return { bg: "bg-red-50", border: "border-red-200", text: "text-red-600", badge: "bg-red-100 text-red-700" };
-    if (drop >= 30) return { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-600", badge: "bg-orange-100 text-orange-700" };
-    return { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-600", badge: "bg-emerald-100 text-emerald-700" };
+  // Funnel trapezoid colors — purple → pink → rose
+  const funnelColors = [
+    { bg: "#7C3AED", text: "#fff" },
+    { bg: "#9333EA", text: "#fff" },
+    { bg: "#C026D3", text: "#fff" },
+    { bg: "#DB2777", text: "#fff" },
+    { bg: "#E11D48", text: "#fff" },
+  ];
+  const maxVal = Math.max(...enrichedStages.map(s => s._val), 1);
+
+  // Conversion rate color
+  const convColor = (conv: number | null) => {
+    if (conv == null) return { text: "text-muted-foreground", bg: "bg-muted/50" };
+    if (conv >= 50) return { text: "text-emerald-600", bg: "bg-emerald-50 border border-emerald-200" };
+    if (conv >= 25) return { text: "text-orange-500", bg: "bg-orange-50 border border-orange-200" };
+    return { text: "text-red-500", bg: "bg-red-50 border border-red-200" };
   };
 
-  const getInterpretationText = (drop: number | null) => {
-    if (drop == null) return { text: "수치가 없어 분석할 수 없습니다.", icon: <Minus size={14} />, type: "neutral" };
-    if (drop >= 50) return { text: "이 단계에서 이탈이 크게 발생하고 있습니다. 최우선 개선 대상입니다.", icon: <AlertTriangle size={14} />, type: "danger" };
-    if (drop >= 30) return { text: "이 구간은 상대적으로 이탈이 높은 편입니다. 개선 여지가 있습니다.", icon: <TrendingDown size={14} />, type: "warning" };
-    return { text: "전환 흐름이 비교적 안정적입니다. 이 단계의 성공 요인을 다른 단계에 적용해보세요.", icon: <CheckCircle size={14} />, type: "good" };
+  // Summary text
+  const summaryText = () => {
+    const service = dashboard.serviceName ? `${dashboard.serviceName}의` : "";
+    const n = enrichedStages.length;
+    const first = firstStage?._val?.toLocaleString() ?? "—";
+    const last = lastStage?._val?.toLocaleString() ?? "—";
+    const conv = totalConvRate != null ? `${totalConvRate}%` : "—";
+    return `${service} 퍼널 데이터를 분석했습니다. 총 ${n}개 단계에서, 최초 유입 ${first}명 중 ${last}명이 최종 단계까지 도달해 전체 전환율은 ${conv}를 기록했습니다.`;
   };
 
-  const getActionIdeas = () => {
-    const ideas: string[] = [];
-    enrichedStages.forEach((s, idx) => {
-      if (idx === 0) return;
-      const drop = s._drop ?? 0;
-      if (drop >= 50) {
-        if (s.stageKey === "activation") ideas.push(`${s.customLabel} 단계의 온보딩 UX를 점검하고, 사용자 첫 경험을 개선해보세요.`);
-        else if (s.stageKey === "revenue") ideas.push(`${s.customLabel} 단계의 결제 흐름에서 장애물(불필요한 단계, 신뢰 신호 부족 등)을 제거해보세요.`);
-        else if (s.stageKey === "retention") ideas.push(`${s.customLabel} 단계의 이탈이 높습니다. 이메일/푸시 리텐션 캠페인 또는 핵심 가치 리마인드를 시도해보세요.`);
-        else ideas.push(`${s.customLabel} 단계에서 이탈 원인을 파악하기 위해 세션 녹화 또는 사용자 인터뷰를 진행해보세요.`);
-      }
-    });
-    if (ideas.length === 0) ideas.push("전반적인 전환 흐름이 안정적입니다. A/B 테스트로 각 단계의 전환율을 추가로 개선해보세요.");
-    if (totalConvRate !== null && totalConvRate < 5) ideas.push("전체 전환율이 낮습니다. 상위 유입 채널의 질을 점검하거나 퍼널 입구 단계의 타겟팅을 재검토해보세요.");
-    return ideas;
+  // Action tip for worst stage
+  const worstActionTip = () => {
+    if (!worstStage) return null;
+    const prev = worstIdx > 0 ? enrichedStages[worstIdx - 1].customLabel : "";
+    return `가장 이탈이 많은 "${prev} → ${worstStage.customLabel}" 구간을 우선적으로 개선해보세요. 해당 단계의 사용자 행동 데이터를 GA 이벤트 보고서에서 확인하는 것을 권장합니다.`;
   };
-
-  const maxVal = Math.max(...enrichedStages.map(s => s._val));
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-5">
 
         {/* Back + Actions */}
         <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -150,253 +148,267 @@ export function DashboardDetail() {
         </div>
 
         {/* Header Card */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/5 border border-primary/15 p-6 sm:p-8 print-break-inside-avoid">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-32 translate-x-32 pointer-events-none" />
-          <div className="relative">
-            <div className="flex flex-wrap gap-2 mb-3">
-              {isOwner && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-primary/15 text-primary uppercase tracking-wider">
-                  <Zap size={10} /> My Board
-                </span>
-              )}
-              {dashboard.serviceName && (
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/60 text-muted-foreground border border-white/50">
-                  {dashboard.serviceName}
-                </span>
-              )}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{dashboard.title}</h1>
-            <p className="text-sm text-muted-foreground">
-              생성일: {format(new Date(dashboard.createdAt), 'yyyy년 MM월 dd일')}
-              {dashboard.updatedAt !== dashboard.createdAt && ` · 수정일: ${format(new Date(dashboard.updatedAt), 'MM월 dd일')}`}
-            </p>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/5 border border-primary/15 p-5 sm:p-6">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {isOwner && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary uppercase tracking-wider">
+                <Zap size={9} /> My Board
+              </span>
+            )}
+            {dashboard.serviceName && (
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-white/60 text-muted-foreground border border-white/50">
+                {dashboard.serviceName}
+              </span>
+            )}
           </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-1">{dashboard.title}</h1>
+          <p className="text-xs text-muted-foreground">
+            생성일: {format(new Date(dashboard.createdAt), 'yyyy년 MM월 dd일')}
+          </p>
         </div>
 
         {/* Summary Stats */}
         {stages.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 print-break-inside-avoid">
-            <div className="bg-white rounded-2xl border border-border/60 p-4 shadow-sm text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl border border-border/60 p-4 shadow-sm text-center">
               <p className="text-xs text-muted-foreground font-medium mb-1">분석 단계 수</p>
               <p className="text-2xl font-bold text-primary">{stages.length}단계</p>
             </div>
-            <div className="bg-white rounded-2xl border border-border/60 p-4 shadow-sm text-center">
+            <div className="bg-white rounded-xl border border-border/60 p-4 shadow-sm text-center">
               <p className="text-xs text-muted-foreground font-medium mb-1">총 유입</p>
-              <p className="text-2xl font-bold text-foreground">{(firstStage._val).toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground">{firstStage._val.toLocaleString()}</p>
             </div>
-            <div className="bg-white rounded-2xl border border-border/60 p-4 shadow-sm text-center">
+            <div className="bg-white rounded-xl border border-border/60 p-4 shadow-sm text-center">
               <p className="text-xs text-muted-foreground font-medium mb-1">최종 전환</p>
-              <p className="text-2xl font-bold text-foreground">{(lastStage._val).toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground">{lastStage._val.toLocaleString()}</p>
             </div>
-            <div className="bg-white rounded-2xl border border-border/60 p-4 shadow-sm text-center">
+            <div className="bg-white rounded-xl border border-border/60 p-4 shadow-sm text-center">
               <p className="text-xs text-muted-foreground font-medium mb-1">전체 전환율</p>
-              <p className={`text-2xl font-bold ${totalConvRate !== null && totalConvRate >= 10 ? "text-emerald-600" : "text-orange-500"}`}>
-                {totalConvRate !== null ? `${totalConvRate}%` : "—"}
+              <p className={`text-2xl font-bold ${totalConvRate != null && totalConvRate >= 10 ? "text-emerald-600" : "text-orange-500"}`}>
+                {totalConvRate != null ? `${totalConvRate}%` : "—"}
               </p>
             </div>
           </div>
         )}
 
-        {/* Funnel Visualization */}
-        <div className="bg-white rounded-3xl border border-border/50 shadow-sm overflow-hidden print-break-inside-avoid">
-          <div className="px-6 pt-6 pb-2 border-b border-border/40 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <h2 className="text-base font-bold text-foreground">AARRR 퍼널 시각화</h2>
+        {/* ── Top Alert Banner: Worst Stage ── */}
+        {worstStage && worstIdx > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-amber-800">
+                가장 많은 이탈이 발생하는 구간을 발견했어요
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                <span className="font-semibold">"{enrichedStages[worstIdx - 1].customLabel} – {worstStage.customLabel}"</span> 단계의 전환율이{" "}
+                <span className="font-semibold">{worstStage._conv}%</span>로 가장 낮습니다. 이 구간에서 사용자들이 왜 이탈하는지 GA 이벤트 보고서를 통해 확인해보세요.
+              </p>
+            </div>
           </div>
-          <div className="p-6 sm:p-8">
-            <div className="space-y-2">
+        )}
+
+        {/* ── Main Two-Column Layout ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+          {/* Left: Funnel Visualization */}
+          <div className="lg:col-span-3 bg-white rounded-2xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart2 className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-bold text-foreground">퍼널 흐름 시각화</h2>
+            </div>
+            <p className="text-xs text-muted-foreground mb-6">단계를 거치면서 사용자 수가 어떻게 줄어드는지 한눈에 확인할 수 있어요.</p>
+
+            <div className="space-y-0">
               {enrichedStages.map((stage, idx) => {
-                const barWidth = maxVal > 0 ? Math.max((stage._val / maxVal) * 100, 5) : 0;
-                const colors = getStageColor(stage._drop);
+                const widthPct = Math.max((stage._val / maxVal) * 100, 18);
+                const color = funnelColors[Math.min(idx, funnelColors.length - 1)];
+                const cc = convColor(stage._conv);
                 return (
-                  <div key={idx} className="print-break-inside-avoid">
-                    {idx > 0 && (
-                      <div className="flex items-center gap-3 my-2 px-2">
-                        <div className="w-px h-6 bg-gradient-to-b from-border to-transparent mx-6" />
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {stage._conv != null ? (
-                            <>
-                              <span className={`font-semibold ${colors.text}`}>
-                                전환율 {stage._conv}%
-                              </span>
-                              {stage._drop != null && (
-                                <span className="text-muted-foreground/60">· 이탈 {stage._drop}%</span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-muted-foreground/50">수치 없음</span>
+                  <div key={idx} className="flex flex-col items-center">
+                    {/* Trapezoid bar */}
+                    <div
+                      className="relative flex items-center justify-center rounded-sm transition-all"
+                      style={{
+                        width: `${widthPct}%`,
+                        minWidth: 120,
+                        height: 52,
+                        background: color.bg,
+                        clipPath: idx === 0
+                          ? "polygon(3% 0%, 97% 0%, 100% 100%, 0% 100%)"
+                          : idx === enrichedStages.length - 1
+                          ? "polygon(0% 0%, 100% 0%, 97% 100%, 3% 100%)"
+                          : "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+                      }}
+                    >
+                      <div className="text-center">
+                        <p className="text-[10px] font-semibold leading-tight" style={{ color: color.text, opacity: 0.85 }}>
+                          {stage.customLabel}
+                        </p>
+                        <p className="text-base font-bold leading-tight" style={{ color: color.text }}>
+                          {stage._val.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Conversion/Drop between stages */}
+                    {idx < enrichedStages.length - 1 && (
+                      <div className="flex items-center gap-3 my-1.5 self-stretch px-4">
+                        <div className="flex-1 flex justify-end">
+                          {enrichedStages[idx + 1]._conv != null && (
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${convColor(enrichedStages[idx + 1]._conv).bg} ${convColor(enrichedStages[idx + 1]._conv).text}`}>
+                              전환율 {enrichedStages[idx + 1]._conv}%
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          {enrichedStages[idx + 1]._drop != null && (
+                            <span className="text-[11px] text-muted-foreground">
+                              ↑ 이탈 {enrichedStages[idx + 1]._drop}%
+                            </span>
                           )}
                         </div>
                       </div>
                     )}
-                    <div className="relative rounded-xl overflow-hidden" style={{ minHeight: 56 }}>
-                      {/* Background bar */}
-                      <div
-                        className={`absolute left-0 top-0 bottom-0 ${colors.bg} transition-all duration-700`}
-                        style={{ width: `${barWidth}%` }}
-                      />
-                      {/* Content */}
-                      <div className="relative flex items-center justify-between gap-4 px-4 py-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 ${colors.badge}`}>
-                            {idx + 1}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm text-foreground truncate">{stage.customLabel}</p>
-                            {stage.note && (
-                              <p className="text-xs text-muted-foreground truncate max-w-xs hidden sm:block">{stage.note}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xl font-bold text-foreground">{stage._val.toLocaleString()}</p>
-                          {idx > 0 && stage._conv != null && (
-                            <p className={`text-xs font-semibold ${colors.text}`}>전환 {stage._conv}%</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 );
               })}
             </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-5">
+              {enrichedStages.map((stage, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: funnelColors[Math.min(idx, funnelColors.length - 1)].bg }} />
+                  <span className="text-[10px] text-muted-foreground">{stage.customLabel}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Insights Panel */}
+          <div className="lg:col-span-2 space-y-4">
+
+            {/* 분석 인사이트 */}
+            <div className="bg-white rounded-2xl border border-border/50 shadow-sm p-5 space-y-4">
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-primary" />
+                분석 인사이트
+              </h2>
+
+              {/* 이번 분석 요약 */}
+              <div className="rounded-xl bg-primary/5 border border-primary/15 p-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <CheckCircle className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-bold text-primary">이번 분석 요약</span>
+                </div>
+                <p className="text-xs text-foreground/80 leading-relaxed">{summaryText()}</p>
+              </div>
+
+              {/* 가장 큰 이탈 구간 */}
+              {worstStage && worstIdx > 0 && (
+                <div className="flex items-start gap-3 rounded-lg bg-red-50 border border-red-100 p-3">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-0.5">가장 큰 이탈 구간</p>
+                    <p className="text-xs font-semibold text-foreground truncate">
+                      {enrichedStages[worstIdx - 1].customLabel} → {worstStage.customLabel}
+                      <span className="text-red-500 ml-1">({worstStage._conv}% 전환)</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 가장 안정적인 구간 */}
+              {bestStage && bestIdx > 0 && (
+                <div className="flex items-start gap-3 rounded-lg bg-emerald-50 border border-emerald-100 p-3">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-0.5">가장 안정적인 구간</p>
+                    <p className="text-xs font-semibold text-foreground truncate">
+                      {enrichedStages[bestIdx - 1].customLabel} → {bestStage.customLabel}
+                      <span className="text-emerald-600 ml-1">({bestStage._conv}% 전환)</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 추가로 살펴볼 포인트 */}
+              {worstActionTip() && (
+                <div className="flex items-start gap-3 rounded-lg bg-blue-50 border border-blue-100 p-3">
+                  <Info className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-0.5">추가로 살펴볼 포인트</p>
+                    <p className="text-xs text-foreground/80 leading-relaxed">{worstActionTip()}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 눈여겨볼 구간 */}
+            <div className="bg-white rounded-2xl border border-border/50 shadow-sm p-5">
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
+                <Eye className="w-4 h-4 text-primary" />
+                눈여겨볼 구간
+              </h2>
+              <div className="space-y-2">
+                {enrichedStages.slice(1).map((stage, i) => {
+                  const idx = i + 1;
+                  const cc = convColor(stage._conv);
+                  const isWorst = stage === worstStage;
+                  const isBest = stage === bestStage;
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                        isWorst ? "bg-red-50 border border-red-200" :
+                        isBest ? "bg-emerald-50 border border-emerald-200" :
+                        "bg-muted/30 border border-border/40"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isWorst && <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />}
+                        {isBest && <CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" />}
+                        <span className="text-xs text-foreground/80 truncate">
+                          {enrichedStages[idx - 1].customLabel} → {stage.customLabel}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className={`text-sm font-bold ${cc.text}`}>
+                          {stage._conv != null ? `${stage._conv}%` : "—"}
+                        </span>
+                        {isWorst && <AlertTriangle className="w-3 h-3 text-red-400" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
         </div>
 
-        {/* Quick Insights */}
-        {(worstStage || bestStage) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print-break-inside-avoid">
-            {worstStage && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                  <p className="text-xs font-bold uppercase tracking-widest text-red-500">가장 큰 이탈 구간</p>
+        {/* Notes (only if any) */}
+        {enrichedStages.some(s => s.note) && (
+          <div className="bg-white rounded-2xl border border-border/50 shadow-sm p-6">
+            <h3 className="font-bold text-sm flex items-center gap-2 mb-4 text-foreground">
+              <Info className="w-4 h-4 text-muted-foreground" />
+              분석 메모
+            </h3>
+            <div className="space-y-3">
+              {enrichedStages.filter(s => s.note).map((stage, idx) => (
+                <div key={idx} className="border-l-2 border-primary/30 pl-3 py-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">{stage.customLabel}</span>
+                  <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{stage.note}</p>
                 </div>
-                <p className="text-base font-bold text-foreground">{worstStage.customLabel}</p>
-                <p className="text-2xl font-bold text-red-600 mt-1">{worstStage._drop}% 이탈</p>
-                <p className="text-xs text-muted-foreground mt-2">이 단계를 우선적으로 개선하세요.</p>
-              </div>
-            )}
-            {bestStage && (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
-                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-600">가장 높은 전환 구간</p>
-                </div>
-                <p className="text-base font-bold text-foreground">{bestStage.customLabel}</p>
-                <p className="text-2xl font-bold text-emerald-600 mt-1">{bestStage._conv}% 전환</p>
-                <p className="text-xs text-muted-foreground mt-2">이 단계의 성공 요인을 분석해보세요.</p>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Per-Stage Analysis */}
-        <div className="bg-white rounded-3xl border border-border/50 shadow-sm overflow-hidden print-break-inside-avoid">
-          <div className="px-6 pt-6 pb-2 border-b border-border/40 flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            <h2 className="text-base font-bold text-foreground">단계별 상세 분석</h2>
-          </div>
-          <div className="divide-y divide-border/40">
-            {enrichedStages.map((stage, idx) => {
-              if (idx === 0) return null;
-              const interpretation = getInterpretationText(stage._drop);
-              const colors = getStageColor(stage._drop);
-              return (
-                <div key={idx} className="px-6 py-5 flex flex-col sm:flex-row sm:items-start gap-4">
-                  <div className="shrink-0 flex items-center gap-3">
-                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-xl text-sm font-bold ${colors.badge}`}>
-                      {idx + 1}
-                    </span>
-                    <div className="sm:hidden">
-                      <p className="font-semibold text-sm">{enrichedStages[idx - 1].customLabel} → {stage.customLabel}</p>
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="font-semibold text-sm hidden sm:block">
-                      <span className="text-muted-foreground">{enrichedStages[idx - 1].customLabel}</span>
-                      <span className="mx-2 text-muted-foreground/40">→</span>
-                      <span>{stage.customLabel}</span>
-                    </p>
-                    <div className={`flex items-start gap-1.5 text-sm ${
-                      interpretation.type === 'danger' ? 'text-red-600' :
-                      interpretation.type === 'warning' ? 'text-orange-500' :
-                      interpretation.type === 'good' ? 'text-emerald-600' : 'text-muted-foreground'
-                    }`}>
-                      <span className="mt-0.5 shrink-0">{interpretation.icon}</span>
-                      <span>{interpretation.text}</span>
-                    </div>
-                    {stage.note && (
-                      <p className="text-xs text-muted-foreground italic border-l-2 border-border pl-2 mt-2">{stage.note}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-4 shrink-0 text-right">
-                    {stage._conv != null && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">전환율</p>
-                        <p className={`text-lg font-bold ${colors.text}`}>{stage._conv}%</p>
-                      </div>
-                    )}
-                    {stage._drop != null && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">이탈율</p>
-                        <p className={`text-lg font-bold ${colors.text}`}>{stage._drop}%</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Action Ideas + Notes side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print-break-inside-avoid">
-          {/* Action Ideas */}
-          <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-2xl border border-primary/15 p-6">
-            <h3 className="font-bold text-base flex items-center gap-2 mb-4">
-              <Lightbulb className="w-5 h-5 text-primary" />
-              다음 액션 아이디어
-            </h3>
-            <ul className="space-y-3">
-              {getActionIdeas().map((idea, idx) => (
-                <li key={idx} className="flex items-start gap-2.5 text-sm text-foreground/80">
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] font-bold shrink-0 mt-0.5">{idx + 1}</span>
-                  {idea}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Notes */}
-          <div className="bg-white rounded-2xl border border-border/60 p-6 shadow-sm">
-            <h3 className="font-bold text-base flex items-center gap-2 mb-4">
-              <StickyNote className="w-5 h-5 text-secondary-foreground" />
-              분석 메모
-            </h3>
-            {enrichedStages.some(s => s.note) ? (
-              <ul className="space-y-3">
-                {enrichedStages.filter(s => s.note).map((stage, idx) => (
-                  <li key={idx} className="border-l-2 border-primary/30 pl-3 py-0.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">{stage.customLabel}</span>
-                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{stage.note}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="flex flex-col items-center justify-center text-center py-8 text-muted-foreground/60">
-                <Info className="w-8 h-8 mb-2 opacity-40" />
-                <p className="text-sm">아직 입력된 메모가 없습니다.</p>
-                <p className="text-xs mt-1">대시보드 수정 화면에서 각 단계에 메모를 추가할 수 있습니다.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Ownership Notice */}
-        <div className="no-print rounded-xl border border-amber-100 bg-amber-50 p-4 text-xs text-amber-700 flex items-start gap-2">
+        <div className="no-print rounded-xl border border-amber-100 bg-amber-50/70 p-3.5 text-xs text-amber-700 flex items-start gap-2">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
-          <p>이 브라우저에서 만든 대시보드만 수정할 수 있습니다. 브라우저 데이터를 삭제하면 수정 권한이 사라질 수 있습니다.</p>
+          <p>이 브라우저에서 만든 대시보드만 수정할 수 있습니다. 시크릿 모드나 브라우저 데이터 삭제 시 수정 권한이 사라질 수 있습니다.</p>
         </div>
 
       </div>
