@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 
-const ADMIN_EMAIL = "admin@example.com";
+const ADMIN_EMAIL = "admin@growthcamp.site";
 const TOKEN_KEY = "aarrr_owner_token";
 const ADMIN_KEY = "aarrr_admin_email";
 

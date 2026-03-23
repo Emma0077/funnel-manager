@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, projectsTable, dashboardsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@example.com";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@growthcamp.site";
 
 function getAdminEmail(req: any): string | undefined {
   const auth = req.headers["authorization"] as string | undefined;
