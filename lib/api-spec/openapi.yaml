@@ -378,6 +378,12 @@ components:
           type: string
         isHidden:
           type: boolean
+        periodStart:
+          type: string
+          nullable: true
+        periodEnd:
+          type: string
+          nullable: true
         stages:
           type: array
           items:
@@ -420,6 +426,12 @@ components:
         serviceName:
           type: string
           nullable: true
+        periodStart:
+          type: string
+          nullable: true
+        periodEnd:
+          type: string
+          nullable: true
         createdByToken:
           type: string
         stages:
@@ -437,6 +449,12 @@ components:
         title:
           type: string
         serviceName:
+          type: string
+          nullable: true
+        periodStart:
+          type: string
+          nullable: true
+        periodEnd:
           type: string
           nullable: true
         ownerToken:

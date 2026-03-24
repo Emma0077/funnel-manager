@@ -10,6 +10,8 @@ import type { Stage } from "./stage";
 export interface UpdateDashboardInput {
   title: string;
   serviceName?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   ownerToken: string;
   stages: Stage[];
 }

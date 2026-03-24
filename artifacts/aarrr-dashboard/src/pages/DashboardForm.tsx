@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, AlertCircle, ShoppingCart, Newspaper, Cpu, RotateCcw } from "lucide-react";
+import { Trash2, Plus, AlertCircle, ShoppingCart, Newspaper, Cpu, RotateCcw, CalendarRange } from "lucide-react";
 import { GAGuidance } from "@/components/GAGuidance";
 
 const STAGE_TYPES = [
@@ -21,6 +21,8 @@ const STAGE_TYPES = [
 const schema = z.object({
   title: z.string().min(1, "대시보드 제목을 입력해주세요."),
   serviceName: z.string().optional(),
+  periodStart: z.string().optional().nullable(),
+  periodEnd: z.string().optional().nullable(),
   stages: z.array(z.object({
     stageKey: z.string().min(1, "단계를 선택해주세요."),
     customLabel: z.string().min(1, "라벨을 입력해주세요."),
@@ -176,6 +178,31 @@ export function DashboardForm({ defaultValues, onSubmit, isPending, projectName 
               placeholder="분석 대상 서비스 이름"
               className="h-11 rounded-xl bg-muted/30"
             />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <CalendarRange className="w-4 h-4 text-muted-foreground" />
+              데이터 조회 기간 <span className="text-muted-foreground font-normal">(선택)</span>
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground font-medium">시작일</span>
+                <Input
+                  type="date"
+                  {...form.register("periodStart")}
+                  className="h-11 rounded-xl bg-muted/30"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground font-medium">종료일</span>
+                <Input
+                  type="date"
+                  {...form.register("periodEnd")}
+                  className="h-11 rounded-xl bg-muted/30"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground/70">GA에서 데이터를 추출한 기간을 입력하면 대시보드에 표시됩니다.</p>
           </div>
         </CardContent>
       </Card>

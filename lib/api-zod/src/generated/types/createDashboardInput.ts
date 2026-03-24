@@ -11,6 +11,8 @@ export interface CreateDashboardInput {
   title: string;
   slug?: string | null;
   serviceName?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   createdByToken: string;
   stages: Stage[];
 }

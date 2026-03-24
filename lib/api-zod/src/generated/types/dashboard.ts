@@ -17,5 +17,7 @@ export interface Dashboard {
   createdAt: string;
   updatedAt: string;
   isHidden: boolean;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   stages: Stage[];
 }

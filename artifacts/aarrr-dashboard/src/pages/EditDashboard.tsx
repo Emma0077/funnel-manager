@@ -35,6 +35,8 @@ export function EditDashboard() {
   const defaultValues: Partial<DashboardFormValues> = {
     title: dashboard.title,
     serviceName: dashboard.serviceName || "",
+    periodStart: dashboard.periodStart || "",
+    periodEnd: dashboard.periodEnd || "",
     stages: dashboard.stages.map(s => ({
       stageKey: s.stageKey,
       customLabel: s.customLabel,
@@ -47,6 +49,8 @@ export function EditDashboard() {
     const formattedData = {
       title: data.title,
       serviceName: data.serviceName,
+      periodStart: data.periodStart || null,
+      periodEnd: data.periodEnd || null,
       ownerToken: ownerToken,
       stages: data.stages.map((s, i) => ({ ...s, order: i }))
     };

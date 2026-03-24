@@ -79,7 +79,7 @@ router.post("/projects/:projectSlug/dashboards", async (req, res) => {
       res.status(404).json({ error: "프로젝트를 찾을 수 없습니다." });
       return;
     }
-    const { title, slug, serviceName, createdByToken, stages } = req.body;
+    const { title, slug, serviceName, periodStart, periodEnd, createdByToken, stages } = req.body;
     const finalSlug = slug || generateSlug(title);
     const computedStages = computeStages(stages || []);
 
@@ -88,6 +88,8 @@ router.post("/projects/:projectSlug/dashboards", async (req, res) => {
       title,
       slug: finalSlug,
       serviceName: serviceName ?? null,
+      periodStart: periodStart ?? null,
+      periodEnd: periodEnd ?? null,
       createdByToken,
       isHidden: false,
       stages: computedStages,
@@ -153,7 +155,7 @@ router.put("/projects/:projectSlug/dashboards/:dashboardSlug", async (req, res) 
       return;
     }
 
-    const { title, serviceName, ownerToken, stages } = req.body;
+    const { title, serviceName, periodStart, periodEnd, ownerToken, stages } = req.body;
     const isAdminUser = isAdmin(req);
 
     if (!isAdminUser && ownerToken !== existing.createdByToken) {
@@ -168,6 +170,8 @@ router.put("/projects/:projectSlug/dashboards/:dashboardSlug", async (req, res) 
       .set({
         title,
         serviceName: serviceName ?? null,
+        periodStart: periodStart ?? null,
+        periodEnd: periodEnd ?? null,
         stages: computedStages,
         updatedAt: new Date(),
       })

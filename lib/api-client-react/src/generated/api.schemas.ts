@@ -47,6 +47,8 @@ export interface Dashboard {
   createdAt: string;
   updatedAt: string;
   isHidden: boolean;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   stages: Stage[];
 }
 
@@ -61,6 +63,8 @@ export interface CreateDashboardInput {
   title: string;
   slug?: string | null;
   serviceName?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   createdByToken: string;
   stages: Stage[];
 }
@@ -68,6 +72,8 @@ export interface CreateDashboardInput {
 export interface UpdateDashboardInput {
   title: string;
   serviceName?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   ownerToken: string;
   stages: Stage[];
 }

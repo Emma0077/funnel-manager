@@ -107,6 +107,8 @@ export const ListDashboardsResponseItem = zod.object({
   createdAt: zod.string(),
   updatedAt: zod.string(),
   isHidden: zod.boolean(),
+  periodStart: zod.string().nullish(),
+  periodEnd: zod.string().nullish(),
   stages: zod.array(
     zod.object({
       stageKey: zod.string(),
@@ -132,6 +134,8 @@ export const CreateDashboardBody = zod.object({
   title: zod.string(),
   slug: zod.string().nullish(),
   serviceName: zod.string().nullish(),
+  periodStart: zod.string().nullish(),
+  periodEnd: zod.string().nullish(),
   createdByToken: zod.string(),
   stages: zod.array(
     zod.object({
@@ -164,6 +168,8 @@ export const GetDashboardResponse = zod.object({
   createdAt: zod.string(),
   updatedAt: zod.string(),
   isHidden: zod.boolean(),
+  periodStart: zod.string().nullish(),
+  periodEnd: zod.string().nullish(),
   stages: zod.array(
     zod.object({
       stageKey: zod.string(),
@@ -188,6 +194,8 @@ export const UpdateDashboardParams = zod.object({
 export const UpdateDashboardBody = zod.object({
   title: zod.string(),
   serviceName: zod.string().nullish(),
+  periodStart: zod.string().nullish(),
+  periodEnd: zod.string().nullish(),
   ownerToken: zod.string(),
   stages: zod.array(
     zod.object({
@@ -212,6 +220,8 @@ export const UpdateDashboardResponse = zod.object({
   createdAt: zod.string(),
   updatedAt: zod.string(),
   isHidden: zod.boolean(),
+  periodStart: zod.string().nullish(),
+  periodEnd: zod.string().nullish(),
   stages: zod.array(
     zod.object({
       stageKey: zod.string(),

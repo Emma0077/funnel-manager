@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Printer, Edit3, Trash2,
   AlertTriangle, CheckCircle, Info,
-  Lightbulb, BarChart2, Zap, Eye
+  Lightbulb, BarChart2, Zap, Eye, CalendarRange
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -91,7 +91,15 @@ export function DashboardDetail() {
     { bg: "#DB2777", text: "#fff" },
     { bg: "#E11D48", text: "#fff" },
   ];
-  const maxVal = Math.max(...enrichedStages.map(s => s._val), 1);
+  const firstVal = firstStage?._val || 1;
+  // Compute each stage's width as % of first stage value
+  const pctWidths = enrichedStages.map(s => Math.max((s._val / firstVal) * 100, 10));
+  // topWidthPct: 100% for stage 0; pctWidths[i] for stage i > 0
+  // bottomWidthPct: pctWidths[i+1] for non-last stages; pctWidths[i] for last stage
+  const stageWidths = enrichedStages.map((_, i) => ({
+    top: i === 0 ? 100 : pctWidths[i],
+    bottom: i < enrichedStages.length - 1 ? pctWidths[i + 1] : pctWidths[i],
+  }));
 
   // Conversion rate color
   const convColor = (conv: number | null) => {
@@ -162,9 +170,17 @@ export function DashboardDetail() {
             )}
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-1">{dashboard.title}</h1>
-          <p className="text-xs text-muted-foreground">
-            생성일: {format(new Date(dashboard.createdAt), 'yyyy년 MM월 dd일')}
-          </p>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+            <span>생성일: {format(new Date(dashboard.createdAt), 'yyyy년 MM월 dd일')}</span>
+            {(dashboard.periodStart || dashboard.periodEnd) && (
+              <span className="flex items-center gap-1 bg-white/60 border border-white/50 rounded-full px-2.5 py-0.5 font-medium">
+                <CalendarRange className="w-3 h-3" />
+                {dashboard.periodStart && format(new Date(dashboard.periodStart), 'yyyy.MM.dd')}
+                {dashboard.periodStart && dashboard.periodEnd && " – "}
+                {dashboard.periodEnd && format(new Date(dashboard.periodEnd), 'yyyy.MM.dd')}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Summary Stats */}
@@ -218,55 +234,48 @@ export function DashboardDetail() {
             </div>
             <p className="text-xs text-muted-foreground mb-6">단계를 거치면서 사용자 수가 어떻게 줄어드는지 한눈에 확인할 수 있어요.</p>
 
-            <div className="space-y-0">
+            {/* Proper narrowing funnel — each stage is a trapezoid via clip-path */}
+            <div className="flex flex-col items-center gap-0">
               {enrichedStages.map((stage, idx) => {
-                const widthPct = Math.max((stage._val / maxVal) * 100, 18);
                 const color = funnelColors[Math.min(idx, funnelColors.length - 1)];
                 const cc = convColor(stage._conv);
+                const sw = stageWidths[idx];
+                const leftTop = (100 - sw.top) / 2;
+                const rightTop = (100 + sw.top) / 2;
+                const leftBottom = (100 - sw.bottom) / 2;
+                const rightBottom = (100 + sw.bottom) / 2;
+                const clipPath = `polygon(${leftTop}% 0%, ${rightTop}% 0%, ${rightBottom}% 100%, ${leftBottom}% 100%)`;
+
                 return (
-                  <div key={idx} className="flex flex-col items-center">
-                    {/* Trapezoid bar */}
+                  <div key={idx} className="w-full flex flex-col items-center">
+                    {/* Trapezoid segment */}
                     <div
-                      className="relative flex items-center justify-center rounded-sm transition-all"
-                      style={{
-                        width: `${widthPct}%`,
-                        minWidth: 120,
-                        height: 52,
-                        background: color.bg,
-                        clipPath: idx === 0
-                          ? "polygon(3% 0%, 97% 0%, 100% 100%, 0% 100%)"
-                          : idx === enrichedStages.length - 1
-                          ? "polygon(0% 0%, 100% 0%, 97% 100%, 3% 100%)"
-                          : "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-                      }}
+                      className="w-full flex items-center justify-center relative"
+                      style={{ height: 62, clipPath, background: color.bg }}
                     >
-                      <div className="text-center">
-                        <p className="text-[10px] font-semibold leading-tight" style={{ color: color.text, opacity: 0.85 }}>
+                      <div className="text-center px-2">
+                        <p className="text-[10px] font-semibold leading-tight truncate max-w-[140px]" style={{ color: color.text, opacity: 0.9 }}>
                           {stage.customLabel}
                         </p>
-                        <p className="text-base font-bold leading-tight" style={{ color: color.text }}>
+                        <p className="text-base font-bold leading-snug" style={{ color: color.text }}>
                           {stage._val.toLocaleString()}
                         </p>
                       </div>
                     </div>
 
-                    {/* Conversion/Drop between stages */}
+                    {/* Conversion rate row between stages */}
                     {idx < enrichedStages.length - 1 && (
-                      <div className="flex items-center gap-3 my-1.5 self-stretch px-4">
-                        <div className="flex-1 flex justify-end">
-                          {enrichedStages[idx + 1]._conv != null && (
-                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${convColor(enrichedStages[idx + 1]._conv).bg} ${convColor(enrichedStages[idx + 1]._conv).text}`}>
-                              전환율 {enrichedStages[idx + 1]._conv}%
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          {enrichedStages[idx + 1]._drop != null && (
-                            <span className="text-[11px] text-muted-foreground">
-                              ↑ 이탈 {enrichedStages[idx + 1]._drop}%
-                            </span>
-                          )}
-                        </div>
+                      <div className="flex w-full items-center justify-end gap-3 py-1 px-2">
+                        {enrichedStages[idx + 1]._conv != null && (
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${convColor(enrichedStages[idx + 1]._conv).bg} ${convColor(enrichedStages[idx + 1]._conv).text}`}>
+                            전환율 {enrichedStages[idx + 1]._conv}%
+                          </span>
+                        )}
+                        {enrichedStages[idx + 1]._drop != null && (
+                          <span className="text-[10px] text-muted-foreground">
+                            이탈 {enrichedStages[idx + 1]._drop}%
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

@@ -12,6 +12,8 @@ export const dashboardsTable = pgTable("dashboards", {
   createdByToken: text("created_by_token").notNull(),
   isHidden: boolean("is_hidden").notNull().default(false),
   stages: jsonb("stages").notNull().default([]),
+  periodStart: text("period_start"),
+  periodEnd: text("period_end"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
