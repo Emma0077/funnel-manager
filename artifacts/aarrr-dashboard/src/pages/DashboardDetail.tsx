@@ -91,11 +91,17 @@ export function DashboardDetail() {
     { bg: "#DB2777", text: "#fff" },
     { bg: "#E11D48", text: "#fff" },
   ];
-  const firstVal = firstStage?._val || 1;
-  // Compute each stage's width as % of first stage value
-  const pctWidths = enrichedStages.map(s => Math.max((s._val / firstVal) * 100, 10));
-  // topWidthPct: 100% for stage 0; pctWidths[i] for stage i > 0
-  // bottomWidthPct: pctWidths[i+1] for non-last stages; pctWidths[i] for last stage
+  // Log scale so even tiny stages (e.g. 8 vs 320) have visually distinct widths
+  const logVals = enrichedStages.map(s => Math.log(Math.max(s._val, 1)));
+  const logMin = Math.min(...logVals);
+  const logMax = Math.max(...logVals);
+  const logRange = logMax - logMin;
+  // Maps maxVal → 100%, minVal → 8%
+  const pctWidths = logVals.map(lv =>
+    logRange === 0 ? 100 : Math.max(8 + ((lv - logMin) / logRange) * 92, 8)
+  );
+  // topWidth: 100% for stage 0 (always full); pctWidths[i] for stage i > 0
+  // bottomWidth: pctWidths[i+1] for non-last; pctWidths[i] for last (flat bottom)
   const stageWidths = enrichedStages.map((_, i) => ({
     top: i === 0 ? 100 : pctWidths[i],
     bottom: i < enrichedStages.length - 1 ? pctWidths[i + 1] : pctWidths[i],
@@ -253,7 +259,7 @@ export function DashboardDetail() {
                       className="w-full flex items-center justify-center relative"
                       style={{ height: 62, clipPath, background: color.bg }}
                     >
-                      <div className="text-center px-2">
+                      <div className="text-center px-2" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.45)" }}>
                         <p className="text-[10px] font-semibold leading-tight truncate max-w-[140px]" style={{ color: color.text, opacity: 0.9 }}>
                           {stage.customLabel}
                         </p>
