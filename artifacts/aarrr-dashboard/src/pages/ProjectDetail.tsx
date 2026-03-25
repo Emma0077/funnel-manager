@@ -44,7 +44,7 @@ export function ProjectDetail() {
 
       <div className="mt-12">
         <h2 className="text-xl font-bold font-display flex items-center gap-2 mb-6">
-          <BarChart3 className="text-primary w-5 h-5" /> 제출된 대시보드
+          <BarChart3 className="text-primary w-5 h-5" /> 대시보드 목록
         </h2>
 
         {dashLoading ? (
