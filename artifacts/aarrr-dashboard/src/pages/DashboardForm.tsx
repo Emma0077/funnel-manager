@@ -230,6 +230,7 @@ export function DashboardForm({ defaultValues, onSubmit, isPending, projectName 
                     {index + 1}
                   </div>
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/*
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground font-bold uppercase tracking-wider">AARRR 분류</Label>
                       <Select onValueChange={(val) => handleStageChange(index, val)} defaultValue={field.stageKey}>
@@ -241,6 +242,7 @@ export function DashboardForm({ defaultValues, onSubmit, isPending, projectName 
                         </SelectContent>
                       </Select>
                     </div>
+                    */}
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground font-bold uppercase tracking-wider">라벨 (표시될 이름)</Label>
                       <Input {...form.register(`stages.${index}.customLabel`)} className="h-10 rounded-xl bg-muted/30" />
