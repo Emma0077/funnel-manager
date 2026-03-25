@@ -278,7 +278,7 @@ export function DashboardForm({ defaultValues, onSubmit, isPending, projectName 
           ))}
         </div>
 
-        {fields.length < 5 && (
+        {fields.length < 10 && (
           <Button
             type="button"
             variant="outline"
