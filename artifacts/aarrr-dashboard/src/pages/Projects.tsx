@@ -103,7 +103,7 @@ export function Projects() {
     <MainLayout>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">워크샵 프로젝트</h1>
+          <h1 className="text-3xl font-bold text-foreground">프로젝트 목록</h1>
           <p className="text-muted-foreground mt-1">AARRR 퍼널 분석을 진행할 프로젝트를 선택하세요.</p>
         </div>
 
