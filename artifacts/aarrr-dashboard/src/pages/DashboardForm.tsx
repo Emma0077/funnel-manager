@@ -214,11 +214,11 @@ export function DashboardForm({ defaultValues, onSubmit, isPending, projectName 
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">퍼널 단계 설정</h2>
-          /*
+          {/*
           <span className="text-xs font-semibold bg-primary/10 text-primary px-3 py-1 rounded-full">
             {fields.length} / 5 단계
           </span>
-          */
+          */}
         </div>
 
         <div className="space-y-3">
