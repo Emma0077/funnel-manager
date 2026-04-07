@@ -49,25 +49,25 @@ type Template = {
 };
 
 const ECOMMERCE_STAGES: StageTemplate[] = [
-  { stageKey: "acquisition", customLabel: "획득 (Acquisition)", metricValue: 10000, note: "검색 광고 및 SNS 유입" },
-  { stageKey: "activation", customLabel: "상품조회 (Activation)", metricValue: 4000, note: "상품 상세 페이지 조회" },
-  { stageKey: "activation", customLabel: "장바구니 (Activation)", metricValue: 1500, note: "장바구니 담기 완료" },
-  { stageKey: "revenue", customLabel: "구매 (Revenue)", metricValue: 300, note: "실제 결제 완료" },
+  { stageKey: "acquisition", customLabel: "획득", metricValue: 10000, note: "검색 광고 및 SNS 유입" },
+  { stageKey: "activation", customLabel: "상품조회", metricValue: 4000, note: "상품 상세 페이지 조회" },
+  { stageKey: "activation", customLabel: "장바구니", metricValue: 1500, note: "장바구니 담기 완료" },
+  { stageKey: "revenue", customLabel: "구매", metricValue: 300, note: "실제 결제 완료" },
 ];
 
 const CONTENT_STAGES: StageTemplate[] = [
-  { stageKey: "acquisition", customLabel: "획득 (Acquisition)", metricValue: 20000, note: "검색 및 외부 링크 유입" },
-  { stageKey: "activation", customLabel: "콘텐츠 조회 (Activation)", metricValue: 8000, note: "글/영상 조회 완료" },
-  { stageKey: "retention", customLabel: "재방문 (Retention)", metricValue: 2000, note: "30일 내 재방문 사용자" },
-  { stageKey: "revenue", customLabel: "광고 클릭 (Revenue)", metricValue: 500, note: "광고 클릭 또는 제휴 링크 전환" },
+  { stageKey: "acquisition", customLabel: "획득", metricValue: 20000, note: "검색 및 외부 링크 유입" },
+  { stageKey: "activation", customLabel: "콘텐츠 조회", metricValue: 8000, note: "글/영상 조회 완료" },
+  { stageKey: "retention", customLabel: "재방문", metricValue: 2000, note: "30일 내 재방문 사용자" },
+  { stageKey: "revenue", customLabel: "광고 클릭", metricValue: 500, note: "광고 클릭 또는 제휴 링크 전환" },
 ];
 
 const SAAS_STAGES: StageTemplate[] = [
-  { stageKey: "acquisition", customLabel: "획득 (Acquisition)", metricValue: 5000, note: "마케팅 채널 유입" },
-  { stageKey: "activation", customLabel: "회원가입 (Activation)", metricValue: 1200, note: "가입 완료" },
-  { stageKey: "activation", customLabel: "핵심 기능 사용 (Activation)", metricValue: 600, note: "핵심 기능 최초 사용" },
-  { stageKey: "retention", customLabel: "재방문 (Retention)", metricValue: 300, note: "7일 내 재방문" },
-  { stageKey: "revenue", customLabel: "결제 (Revenue)", metricValue: 100, note: "유료 전환" },
+  { stageKey: "acquisition", customLabel: "획득", metricValue: 5000, note: "마케팅 채널 유입" },
+  { stageKey: "activation", customLabel: "회원가입", metricValue: 1200, note: "가입 완료" },
+  { stageKey: "activation", customLabel: "핵심 기능 사용", metricValue: 600, note: "핵심 기능 최초 사용" },
+  { stageKey: "retention", customLabel: "재방문", metricValue: 300, note: "7일 내 재방문" },
+  { stageKey: "revenue", customLabel: "결제", metricValue: 100, note: "유료 전환" },
 ];
 
 const TEMPLATES: Template[] = [
