@@ -185,9 +185,7 @@ router.put("/projects/:projectSlug/dashboards/:dashboardSlug", async (req, res) 
 });
 
 router.delete("/projects/:projectSlug/dashboards/:dashboardSlug", async (req, res) => {
-  const adminEmail = req.headers["x-admin-email"] as string | undefined;
-  const isAdminUser = !!adminEmail && adminEmail === ADMIN_EMAIL;
-  if (!isAdminUser) {
+  if (!isAdmin(req)) {
     res.status(403).json({ error: "관리자만 대시보드를 삭제할 수 있습니다." });
     return;
   }
