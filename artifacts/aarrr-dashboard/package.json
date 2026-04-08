@@ -75,6 +75,8 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "drizzle-orm": "^0.36.4",
+    "postgres": "^3.4.4"
   }
 }
