@@ -1,28 +1,27 @@
-// @ts-nocheck
 import postgres from "postgres";
 
-const sql = postgres(process.env.DATABASE_URL as string, {
+const sql = postgres(process.env.DATABASE_URL, {
   ssl: "require",
 });
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@growthcamp.site";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@growthcamp.site";
 
-function getAdminEmail(req: any): string | undefined {
-  const auth = req.headers.authorization as string | undefined;
+function getAdminEmail(req) {
+  const auth = req.headers.authorization;
 
-  if (auth?.startsWith("Bearer ")) {
+  if (auth && auth.startsWith("Bearer ")) {
     return auth.slice(7);
   }
 
-  return req.headers["x-admin-email"] as string | undefined;
+  return req.headers["x-admin-email"];
 }
 
-function isAdmin(req: any): boolean {
+function isAdmin(req) {
   const email = getAdminEmail(req);
   return !!email && email === ADMIN_EMAIL;
 }
 
-function generateSlug(name: string): string {
+function generateSlug(name) {
   return (
     name
       .toLowerCase()
@@ -33,7 +32,7 @@ function generateSlug(name: string): string {
   );
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const projects = await sql`
@@ -56,7 +55,7 @@ export default async function handler(req: any, res: any) {
         });
       }
 
-      const { name, slug, description, isHidden } = req.body ?? {};
+      const { name, slug, description, isHidden } = req.body || {};
 
       if (!name || typeof name !== "string") {
         return res.status(400).json({
@@ -86,10 +85,10 @@ export default async function handler(req: any, res: any) {
     }
 
     return res.status(405).json({ error: "Method Not Allowed" });
-  } catch (err: any) {
+  } catch (err) {
     console.error(err);
 
-    if (err?.code === "23505") {
+    if (err && err.code === "23505") {
       return res.status(400).json({
         error: "이미 사용 중인 슬러그입니다. 다른 이름을 시도해보세요.",
       });
@@ -97,7 +96,7 @@ export default async function handler(req: any, res: any) {
 
     return res.status(500).json({
       error: "서버 오류가 발생했습니다.",
-      detail: err?.message ?? null,
+      detail: err?.message || null,
     });
   }
 }
