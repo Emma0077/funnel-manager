@@ -1,7 +1,7 @@
 import { useRoute, Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useGetDashboard, useGetProject, useDeleteDashboard, getListDashboardsQueryKey } from "@workspace/api-client-react";
+import { useGetDashboard, useGetProject, getListDashboardsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,6 @@ export function DashboardDetail() {
 
   const { data: dashboard, isLoading } = useGetDashboard(pSlug, dSlug);
   const { data: project } = useGetProject(pSlug);
-  const deleteDashboard = useDeleteDashboard();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -45,15 +44,22 @@ export function DashboardDetail() {
   const isOwner = dashboard.createdByToken === ownerToken || isAdmin;
   const stages: Stage[] = dashboard.stages || [];
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirm("정말 이 대시보드를 삭제하시겠습니까?")) return;
-    deleteDashboard.mutate({ projectSlug: pSlug, dashboardSlug: dSlug }, {
-      onSuccess: () => {
-        toast({ title: "대시보드가 삭제되었습니다." });
-        queryClient.invalidateQueries({ queryKey: getListDashboardsQueryKey(pSlug) });
-        setLocation(`/projects/${pSlug}`);
-      }
-    });
+    const headers: Record<string, string> = {};
+    if (ownerToken) headers["x-owner-token"] = ownerToken;
+    const basePath = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+    const apiBase = import.meta.env.VITE_API_URL ?? "";
+    const url = `${apiBase}${basePath}/api/projects/${pSlug}/dashboards/${dSlug}`;
+    const res = await fetch(url, { method: "DELETE", headers });
+    if (res.ok) {
+      toast({ title: "대시보드가 삭제되었습니다." });
+      queryClient.invalidateQueries({ queryKey: getListDashboardsQueryKey(pSlug) });
+      setLocation(`/projects/${pSlug}`);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast({ title: data.error ?? "삭제에 실패했습니다.", variant: "destructive" });
+    }
   };
 
   const enrichedStages = stages.map((stage, idx) => {
@@ -153,7 +159,7 @@ export function DashboardDetail() {
                 </Button>
               </Link>
             )}
-            {isAdmin && (
+            {isOwner && (
               <Button size="sm" variant="destructive" onClick={handleDelete} className="rounded-xl gap-1.5">
                 <Trash2 className="w-4 h-4" /> 삭제
               </Button>

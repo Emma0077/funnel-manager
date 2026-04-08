@@ -185,8 +185,11 @@ router.put("/projects/:projectSlug/dashboards/:dashboardSlug", async (req, res) 
 });
 
 router.delete("/projects/:projectSlug/dashboards/:dashboardSlug", async (req, res) => {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "관리자만 대시보드를 삭제할 수 있습니다." });
+  const adminUser = isAdmin(req);
+  const ownerToken = req.headers["x-owner-token"] as string | undefined;
+
+  if (!adminUser && !ownerToken) {
+    res.status(403).json({ error: "삭제 권한이 없습니다." });
     return;
   }
   try {
@@ -198,12 +201,24 @@ router.delete("/projects/:projectSlug/dashboards/:dashboardSlug", async (req, re
       res.status(404).json({ error: "프로젝트를 찾을 수 없습니다." });
       return;
     }
-    await db.delete(dashboardsTable).where(
-      and(
-        eq(dashboardsTable.projectId, project.id),
-        eq(dashboardsTable.slug, req.params.dashboardSlug)
-      )
-    );
+    const [existing] = await db
+      .select()
+      .from(dashboardsTable)
+      .where(
+        and(
+          eq(dashboardsTable.projectId, project.id),
+          eq(dashboardsTable.slug, req.params.dashboardSlug)
+        )
+      );
+    if (!existing) {
+      res.status(404).json({ error: "대시보드를 찾을 수 없습니다." });
+      return;
+    }
+    if (!adminUser && ownerToken !== existing.createdByToken) {
+      res.status(403).json({ error: "본인이 만든 대시보드만 삭제할 수 있습니다." });
+      return;
+    }
+    await db.delete(dashboardsTable).where(eq(dashboardsTable.id, existing.id));
     res.json({ success: true });
   } catch (err) {
     req.log.error(err);
