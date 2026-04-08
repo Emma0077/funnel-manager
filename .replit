@@ -27,3 +27,8 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+DATABASE_URL = "postgresql://postgres:rXxW8ZO3s6QHyLGo@db.qdheqnyygvcxibwogasd.supabase.co:5432/postgres"
