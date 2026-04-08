@@ -1,5 +1,8 @@
-import { db, projectsTable, dashboardsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import postgres from "postgres";
+
+const sql = postgres(process.env.DATABASE_URL as string, {
+  ssl: "require",
+});
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@growthcamp.site";
 
@@ -32,51 +35,48 @@ function generateSlug(name: string): string {
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === "GET") {
-      const projects = await db
-        .select()
-        .from(projectsTable)
-        .orderBy(projectsTable.createdAt);
+      const projects = await sql`
+        select
+          p.*,
+          coalesce(count(d.id), 0)::int as "dashboardCount"
+        from projects p
+        left join dashboards d on d.project_id = p.id
+        group by p.id
+        order by p.created_at asc
+      `;
 
-      const withCounts = await Promise.all(
-        projects.map(async (p) => {
-          const [{ count }] = await db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(dashboardsTable)
-            .where(eq(dashboardsTable.projectId, p.id));
-
-          return { ...p, dashboardCount: count };
-        }),
-      );
-
-      return res.status(200).json(withCounts);
+      return res.status(200).json(projects);
     }
 
     if (req.method === "POST") {
       if (!isAdmin(req)) {
-        return res
-          .status(403)
-          .json({ error: "관리자만 프로젝트를 만들 수 있습니다." });
+        return res.status(403).json({
+          error: "관리자만 프로젝트를 만들 수 있습니다.",
+        });
       }
 
       const { name, slug, description, isHidden } = req.body ?? {};
 
       if (!name || typeof name !== "string") {
-        return res
-          .status(400)
-          .json({ error: "프로젝트 이름(name)은 필수입니다." });
+        return res.status(400).json({
+          error: "프로젝트 이름(name)은 필수입니다.",
+        });
       }
 
       const finalSlug = slug || generateSlug(name);
 
-      const [project] = await db
-        .insert(projectsTable)
-        .values({
-          name,
-          slug: finalSlug,
-          description: description ?? null,
-          isHidden: isHidden ?? false,
-        })
-        .returning();
+      const inserted = await sql`
+        insert into projects (name, slug, description, is_hidden)
+        values (
+          ${name},
+          ${finalSlug},
+          ${description ?? null},
+          ${isHidden ?? false}
+        )
+        returning *
+      `;
+
+      const project = inserted[0];
 
       return res.status(201).json({
         ...project,
@@ -86,13 +86,17 @@ export default async function handler(req: any, res: any) {
 
     return res.status(405).json({ error: "Method Not Allowed" });
   } catch (err: any) {
+    console.error(err);
+
     if (err?.code === "23505") {
-      return res
-        .status(400)
-        .json({ error: "이미 사용 중인 슬러그입니다. 다른 이름을 시도해보세요." });
+      return res.status(400).json({
+        error: "이미 사용 중인 슬러그입니다. 다른 이름을 시도해보세요.",
+      });
     }
 
-    console.error(err);
-    return res.status(500).json({ error: "서버 오류가 발생했습니다." });
+    return res.status(500).json({
+      error: "서버 오류가 발생했습니다.",
+      detail: err?.message ?? null,
+    });
   }
 }
