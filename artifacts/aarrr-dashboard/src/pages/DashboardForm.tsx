@@ -28,7 +28,7 @@ const schema = z.object({
     customLabel: z.string().min(1, "라벨을 입력해주세요."),
     metricValue: z.coerce.number().optional().nullable(),
     note: z.string().optional().nullable()
-  })).min(3, "최소 3개의 단계가 필요합니다.").max(5, "최대 5개까지만 추가 가능합니다.")
+  })).min(3, "최소 3개의 단계가 필요합니다.").max(10, "최대 10개까지만 추가 가능합니다.")
 });
 
 export type DashboardFormValues = z.infer<typeof schema>;

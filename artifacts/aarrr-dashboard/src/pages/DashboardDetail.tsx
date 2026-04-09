@@ -91,13 +91,18 @@ export function DashboardDetail() {
   }, null);
   const bestIdx = bestStage ? enrichedStages.indexOf(bestStage) : -1;
 
-  // Funnel trapezoid colors — purple → pink → rose
+  // Funnel trapezoid colors — purple → pink → rose → orange → amber
   const funnelColors = [
     { bg: "#7C3AED", text: "#fff" },
     { bg: "#9333EA", text: "#fff" },
     { bg: "#C026D3", text: "#fff" },
     { bg: "#DB2777", text: "#fff" },
     { bg: "#E11D48", text: "#fff" },
+    { bg: "#F43F5E", text: "#fff" },
+    { bg: "#F97316", text: "#fff" },
+    { bg: "#EAB308", text: "#fff" },
+    { bg: "#84CC16", text: "#fff" },
+    { bg: "#10B981", text: "#fff" },
   ];
   // Log scale so even tiny stages (e.g. 8 vs 320) have visually distinct widths
   const logVals = enrichedStages.map(s => Math.log(Math.max(s._val, 1)));
