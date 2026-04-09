@@ -1,6 +1,6 @@
 {
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter @workspace/aarrr-dashboard run build && pnpm --filter @workspace/db run push-force && pnpm --filter @workspace/api-server run build:vercel",
+  "buildCommand": "pnpm --filter @workspace/aarrr-dashboard run build && cp artifacts/aarrr-dashboard/dist/index.html artifacts/aarrr-dashboard/dist/404.html && pnpm --filter @workspace/db run push-force && pnpm --filter @workspace/api-server run build:vercel",
   "outputDirectory": "artifacts/aarrr-dashboard/dist",
   "functions": {
     "api/index.js": {
@@ -8,7 +8,6 @@
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": "/api/index" }
   ]
 }
