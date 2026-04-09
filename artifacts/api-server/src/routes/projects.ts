@@ -41,7 +41,7 @@ router.get("/projects", async (req, res) => {
     res.json(withCounts);
   } catch (err) {
     req.log.error(err);
-    res.status(500).json({ error: "서버 오류가 발생했습니다.", _debug: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ error: "서버 오류가 발생했습니다." });
   }
 });
 
