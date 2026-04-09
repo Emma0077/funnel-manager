@@ -4,6 +4,6 @@
   "outputDirectory": "artifacts/aarrr-dashboard/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/((?!assets|favicon|images|opengraph).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
