@@ -30,6 +30,9 @@ globalThis.__dirname = __dirname;
 globalThis.__filename = __filename;
 `,
   },
+  footer: {
+    js: `if (module.exports && module.exports.default) { module.exports = module.exports.default; }`,
+  },
 });
 
 console.log(`API serverless handler written to: ${outFile}`);
