@@ -19,7 +19,7 @@ run = "pnpm --filter @workspace/aarrr-dashboard run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/aarrr-dashboard", "run", "build" ]
-publicDir = "artifacts/aarrr-dashboard/dist/public"
+publicDir = "artifacts/aarrr-dashboard/dist"
 serve = "static"
 
 [[services.production.rewrites]]
