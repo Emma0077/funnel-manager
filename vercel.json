@@ -2,6 +2,11 @@
   "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/aarrr-dashboard run build && pnpm --filter @workspace/api-server run build:vercel",
   "outputDirectory": "dist",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }

@@ -56011,7 +56011,7 @@ router2.get("/projects", async (req, res) => {
     res.json(withCounts);
   } catch (err) {
     req.log.error(err);
-    res.status(500).json({ error: "\uC11C\uBC84 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4." });
+    res.status(500).json({ error: "\uC11C\uBC84 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.", _debug: err instanceof Error ? err.message : String(err) });
   }
 });
 router2.post("/projects", async (req, res) => {
