@@ -75,9 +75,6 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "@fontsource/inter": "^5.2.8",
-    "@fontsource/outfit": "^5.2.8",
-    "@fontsource/plus-jakarta-sans": "^5.2.8",
     "drizzle-orm": "^0.36.4",
     "postgres": "^3.4.4",
     "uuid": "^13.0.0"
