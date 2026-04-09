@@ -48,10 +48,12 @@ export function DashboardDetail() {
     if (!confirm("정말 이 대시보드를 삭제하시겠습니까?")) return;
     const headers: Record<string, string> = {};
     if (ownerToken) headers["x-owner-token"] = ownerToken;
-    const basePath = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
-    const apiBase = import.meta.env.VITE_API_URL ?? "";
-    const url = `${apiBase}${basePath}/api/projects/${pSlug}/dashboards/${dSlug}`;
-    const res = await fetch(url, { method: "DELETE", headers });
+    const adminEmail = localStorage.getItem("aarrr_admin_email");
+    if (adminEmail) headers["authorization"] = `Bearer ${adminEmail}`;
+    const res = await fetch(`/api/projects/${pSlug}/dashboards/${dSlug}`, {
+      method: "DELETE",
+      headers,
+    });
     if (res.ok) {
       toast({ title: "대시보드가 삭제되었습니다." });
       queryClient.invalidateQueries({ queryKey: getListDashboardsQueryKey(pSlug) });
