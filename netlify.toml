@@ -1,0 +1,17 @@
+[build]
+  command = "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/aarrr-dashboard run build && pnpm --filter @workspace/api-server run build:netlify && pnpm --filter @workspace/db run push-force"
+  publish = "artifacts/aarrr-dashboard/dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

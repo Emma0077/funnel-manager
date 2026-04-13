@@ -7,6 +7,7 @@
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
     "build:vercel": "node ./build.vercel.mjs",
+    "build:netlify": "node ./build.netlify.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -18,7 +19,8 @@
     "drizzle-orm": "catalog:",
     "express": "^5",
     "pino": "^9",
-    "pino-http": "^10"
+    "pino-http": "^10",
+    "serverless-http": "^4.0.0"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

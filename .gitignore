@@ -5,6 +5,10 @@ dist
 tmp
 out-tsc
 *.tsbuildinfo
+
+# serverless function build outputs (generated during deploy)
+api/index.js
+netlify/functions/api.js
 .expo
 .expo-shared
 
