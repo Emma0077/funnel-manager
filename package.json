@@ -16,7 +16,6 @@
   "dependencies": {
     "drizzle-orm": "catalog:",
     "hono": "^4.12.12",
-    "pg-native": "^3.7.0",
     "postgres": "^3.4.9",
     "supports-color": "^9"
   }
