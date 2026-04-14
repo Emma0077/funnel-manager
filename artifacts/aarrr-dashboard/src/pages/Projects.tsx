@@ -21,7 +21,8 @@ import type { Project } from "@workspace/api-client-react";
 
 export function Projects() {
   const { isAdmin } = useAuth();
-  const { data: allProjects, isLoading } = useListProjects();
+  //const { data: allProjects, isLoading } = useListProjects();
+  const { data, isLoading } = useListProjects();
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
@@ -29,14 +30,12 @@ export function Projects() {
   const { toast } = useToast();
 
   // Filter hidden projects for non-admins
-  const { data, isLoading } = useListProjects();
   const allProjects = Array.isArray(data)
     ? data
     : Array.isArray((data as any)?.data)
       ? (data as any).data
       : [];
-  const projects = isAdmin ? allProjects : allProjects?.filter(p => !p.isHidden);
-  
+  const projects = isAdmin ? allProjects : allProjects?.filter(p => !p.isHidden);  
 
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
