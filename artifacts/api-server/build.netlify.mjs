@@ -39,6 +39,11 @@ globalThis.__dirname = __dirname;
 globalThis.__filename = __filename;
 `,
   },
+  footer: {
+    js: `
+exports.config = { path: "/api/*" };
+`,
+  },
 });
 
 console.log(`Netlify function written to: ${outFile}`);
