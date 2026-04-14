@@ -77,7 +77,6 @@
   "dependencies": {
     "drizzle-orm": "^0.36.4",
     "postgres": "^3.4.4",
-    "uuid": "^13.0.0",
-    "supports-color": "^9.0.0"
+    "uuid": "^13.0.0"
   }
 }
