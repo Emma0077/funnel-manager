@@ -30,16 +30,22 @@ export function Projects() {
   const { toast } = useToast();
 
   // Filter hidden projects for non-admins
-  const { data, isLoading } = useListProjects();  
   const allProjects: Project[] = Array.isArray(data)
     ? data
     : Array.isArray((data as any)?.data)
       ? (data as any).data
-      : [];  
-  const projects: Project[] = Array.isArray(allProjects)
-    ? (isAdmin ? allProjects : allProjects.filter((p) => !p.isHidden))
-    : [];
-
+      : [];
+  const projects: Project[] = isAdmin
+    ? allProjects
+    : allProjects.filter((p) => !p.isHidden);
+  
+  console.log("projects page data:", {
+    rawData: data,
+    allProjects,
+    projects,
+    isAdmin,
+  });
+  
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -107,7 +113,7 @@ export function Projects() {
       }
     });
   };
-
+  
   return (
     <MainLayout>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -208,7 +214,7 @@ export function Projects() {
           </form>
         </DialogContent>
       </Dialog>
-
+      
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1,2,3].map(i => (
@@ -272,7 +278,11 @@ export function Projects() {
                     {project.description || "설명이 없습니다."}
                   </p>
                   <div className="flex items-center justify-between mt-6 text-xs text-muted-foreground/80">
-                    <span>{format(new Date(project.createdAt), 'yyyy.MM.dd')}</span>
+                    <span>
+                      {project.createdAt && !Number.isNaN(new Date(project.createdAt).getTime())
+                        ? format(new Date(project.createdAt), "yyyy.MM.dd")
+                        : "-"}
+                    </span>
                     <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </CardContent>
