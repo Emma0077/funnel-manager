@@ -156,23 +156,28 @@ overrides:
 importers:
 
   .:
-    dependencies:
+    devDependencies:
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.1(@types/pg@8.18.0)(pg@8.20.0)(postgres@3.4.9)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.45.1(@types/pg@8.18.0)(pg@8.20.0)(postgres@3.4.9))(zod@3.25.76)
       hono:
         specifier: ^4.12.12
         version: 4.12.12
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
-    devDependencies:
       prettier:
         specifier: ^3.8.1
         version: 3.8.1
       typescript:
         specifier: ~5.9.2
         version: 5.9.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
 
   artifacts/aarrr-dashboard:
     dependencies:
