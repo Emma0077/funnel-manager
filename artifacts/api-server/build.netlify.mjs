@@ -9,9 +9,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outFile = path.resolve(__dirname, "../../netlify/functions/api.js");
 
 console.log("Building API serverless handler for Netlify...");
+const pgNativeStubPlugin = {
+  name: "pg-native-stub",
+  setup(build) {
+    build.onResolve({ filter: /^pg-native$/ }, () => ({
+      path: path.resolve(__dirname, "stubs/pg-native.js"),
+    }));
+  },
+};
 
 await esbuild({
   entryPoints: [path.resolve(__dirname, "src/netlify-handler.ts")],
+  plugins: [pgNativeStubPlugin],
   platform: "node",
   bundle: true,
   format: "cjs",
