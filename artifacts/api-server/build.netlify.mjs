@@ -17,7 +17,7 @@ await esbuild({
   format: "cjs",
   outfile: outFile,
   logLevel: "info",
-  external: ["*.node", "pg-native", "pino-pretty"],
+  external: ["*.node", "pino-pretty"],
   sourcemap: false,
   define: {
     "process.env.NODE_ENV": '"production"',
