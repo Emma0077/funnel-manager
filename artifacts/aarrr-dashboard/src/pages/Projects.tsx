@@ -30,12 +30,15 @@ export function Projects() {
   const { toast } = useToast();
 
   // Filter hidden projects for non-admins
-  const allProjects = Array.isArray(data)
+  const { data, isLoading } = useListProjects();  
+  const allProjects: Project[] = Array.isArray(data)
     ? data
     : Array.isArray((data as any)?.data)
       ? (data as any).data
-      : [];
-  const projects = isAdmin ? allProjects : allProjects?.filter(p => !p.isHidden);  
+      : [];  
+  const projects: Project[] = Array.isArray(allProjects)
+    ? (isAdmin ? allProjects : allProjects.filter((p) => !p.isHidden))
+    : [];
 
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
