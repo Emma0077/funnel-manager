@@ -7,6 +7,9 @@
   NODE_VERSION = "20"
   PNPM_VERSION = "10"
 
+[functions]
+  external_node_modules = ["pg-native"]
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api"
