@@ -22,7 +22,16 @@ import type { Project } from "@workspace/api-client-react";
 export function Projects() {
   const { isAdmin } = useAuth();
   //const { data: allProjects, isLoading } = useListProjects();
-  const { data, isLoading } = useListProjects();
+  const { data, isLoading, error, isError } = useListProjects();
+  console.log("projects query:", {
+    data,
+    isLoading,
+    isError,
+    error,
+    errorMessage: (error as any)?.message,
+    errorStatus: (error as any)?.status,
+    errorData: (error as any)?.data,
+  });
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
