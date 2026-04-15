@@ -50,7 +50,7 @@ export function DashboardDetail() {
     if (ownerToken) headers["x-owner-token"] = ownerToken;
     const adminEmail = localStorage.getItem("aarrr_admin_email");
     if (adminEmail) headers["authorization"] = `Bearer ${adminEmail}`;
-    const res = await fetch(`/api/projects/${pSlug}/dashboards/${dSlug}`, {
+    const res = await fetch(`/.netlify/functions/api/projects/${pSlug}/dashboards/${dSlug}`, {
       method: "DELETE",
       headers,
     });
