@@ -3,3 +3,9 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 pages_build_output_dir = "artifacts/aarrr-dashboard/dist"
+
+[vars]
+DATABASE_URL = "postgresql://postgres.qdheqnyygvcxibwogasd:rXxW8ZO3s6QHyLGo@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres"
+ADMIN_EMAIL = "admin@growthcamp.site"
+PORT = "3000"
+BASE_PATH = "/"
