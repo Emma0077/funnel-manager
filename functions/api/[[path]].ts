@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { handle } from "hono/cloudflare-pages";
 
 const app = new Hono();
 
@@ -9,4 +10,4 @@ app.post("/api/projects", async (c) => {
   return c.json({ ok: true, body }, 201);
 });
 
-export const onRequest = app.fetch;
+export const onRequest = handle(app);
