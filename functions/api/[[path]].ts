@@ -69,6 +69,27 @@ app.use("*", cors());
 // Health check
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
+app.get("/api/projects", async (c) => {
+  try {
+    const db = makeDb(c.env.DATABASE_URL);
+    const projects = await db
+      .select()
+      .from(projectsTable)
+      .orderBy(projectsTable.createdAt);
+
+    return c.json({ ok: true, count: projects.length });
+  } catch (err: any) {
+    return c.json(
+      {
+        ok: false,
+        message: err?.message ?? "unknown error",
+        stack: String(err?.stack ?? ""),
+      },
+      500
+    );
+  }
+});
+
 // ── Projects ──────────────────────────────────────────────
 
 app.get("/api/projects", async (c) => {
