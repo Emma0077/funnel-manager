@@ -59,11 +59,23 @@ function isUrl(input: RequestInfo | URL): input is URL {
 
 function applyBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
   if (!_baseUrl) return input;
+
   const url = resolveUrl(input);
+
   // Only prepend to relative paths (starting with /)
   if (!url.startsWith("/")) return input;
 
-  const absolute = `${_baseUrl}${url}`;
+  // Netlify Functions direct routing:
+  // generated clients already produce "/api/..."
+  // but the function base should be "/.netlify/functions/api"
+  // so "/api/projects" -> "/.netlify/functions/api/projects"
+  const normalizedUrl =
+    _baseUrl.includes("/.netlify/functions/api") && url.startsWith("/api/")
+      ? url.replace(/^\/api/, "")
+      : url;
+
+  const absolute = `${_baseUrl}${normalizedUrl}`;
+
   if (typeof input === "string") return absolute;
   if (isUrl(input)) return new URL(absolute);
   return new Request(absolute, input as Request);
