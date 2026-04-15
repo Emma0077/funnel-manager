@@ -12,6 +12,12 @@ import {
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { Stage } from "@workspace/api-client-react";
+import {
+  useGetDashboard,
+  useGetProject,
+  getListDashboardsQueryKey,
+  useDeleteDashboard,
+} from "@workspace/api-client-react";
 
 export function DashboardDetail() {
   const [, params] = useRoute("/projects/:projectSlug/:dashboardSlug");
@@ -24,6 +30,7 @@ export function DashboardDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const deleteDashboard = useDeleteDashboard();
 
   if (isLoading) {
     return (
@@ -46,21 +53,31 @@ export function DashboardDetail() {
 
   const handleDelete = async () => {
     if (!confirm("정말 이 대시보드를 삭제하시겠습니까?")) return;
+  
     const headers: Record<string, string> = {};
     if (ownerToken) headers["x-owner-token"] = ownerToken;
     const adminEmail = localStorage.getItem("aarrr_admin_email");
     if (adminEmail) headers["authorization"] = `Bearer ${adminEmail}`;
-    const res = await fetch(`/.netlify/functions/api/projects/${pSlug}/dashboards/${dSlug}`, {
-      method: "DELETE",
-      headers,
-    });
-    if (res.ok) {
+  
+    try {
+      await deleteDashboard.mutateAsync(
+        {
+          projectSlug: pSlug,
+          dashboardSlug: dSlug,
+        },
+        {
+          request: { headers },
+        }
+      );
+  
       toast({ title: "대시보드가 삭제되었습니다." });
       queryClient.invalidateQueries({ queryKey: getListDashboardsQueryKey(pSlug) });
       setLocation(`/projects/${pSlug}`);
-    } else {
-      const data = await res.json().catch(() => ({}));
-      toast({ title: data.error ?? "삭제에 실패했습니다.", variant: "destructive" });
+    } catch (err: any) {
+      toast({
+        title: err?.data?.error ?? err?.message ?? "삭제에 실패했습니다.",
+        variant: "destructive",
+      });
     }
   };
 
