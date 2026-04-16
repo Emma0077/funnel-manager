@@ -7,11 +7,25 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 
 app.get("/api/projects", async (c) => {
   try {
-    const sql = postgres(c.env.DATABASE_URL, { ssl: "require", max: 1 });
+    const sql = postgres(c.env.DATABASE_URL, {
+      ssl: "require",
+      max: 1,
+      fetch_types: false,
+      prepare: false,
+    });
+
     const result = await sql`select 1 as ok`;
     return c.json({ ok: true, result });
   } catch (err: any) {
-    return c.json({ ok: false, message: err?.message, stack: String(err?.stack ?? "") }, 500);
+    return c.json(
+      {
+        ok: false,
+        message: err?.message ?? "unknown error",
+        name: err?.name ?? "",
+        stack: String(err?.stack ?? ""),
+      },
+      500
+    );
   }
 });
 
@@ -27,7 +41,12 @@ import postgres from "postgres";
 import { projectsTable, dashboardsTable } from "../../lib/db/src/schema";
 
 function makeDb(databaseUrl: string) {
-  const client = postgres(databaseUrl, { ssl: "require", max: 1 });
+  const client = postgres(databaseUrl, {
+    ssl: "require",
+    max: 1,
+    fetch_types: false,
+    prepare: false,
+  });
   return drizzle(client);
 }
 
