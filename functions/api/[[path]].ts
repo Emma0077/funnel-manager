@@ -5,8 +5,21 @@ const app = new Hono();
 
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
-app.get("/api/projects", (c) => {
-  return c.json([{ id: 1, name: "test", slug: "test", dashboardCount: 0 }]);
+app.get("/api/projects", async (c) => {
+  try {
+    const db = makeDb(c.env.DATABASE_URL);
+    const projects = await db.select().from(projectsTable);
+    return c.json({ ok: true, count: projects.length, projects });
+  } catch (err: any) {
+    return c.json(
+      {
+        ok: false,
+        message: err?.message ?? "unknown error",
+        stack: String(err?.stack ?? ""),
+      },
+      500
+    );
+  }
 });
 
 app.post("/api/projects", async (c) => {
