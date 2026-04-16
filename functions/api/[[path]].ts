@@ -15,3 +15,7 @@ app.post("/api/projects", async (c) => {
 });
 
 export const onRequest = handle(app);
+
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { projectsTable, dashboardsTable } from "../../lib/db/src/schema";
