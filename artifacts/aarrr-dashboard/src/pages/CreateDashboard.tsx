@@ -30,8 +30,23 @@ export function CreateDashboard() {
         queryClient.invalidateQueries({ queryKey: getListDashboardsQueryKey(slug) });
         setLocation(`/projects/${slug}/${res.slug}`);
       },
-      onError: () => toast({ variant: "destructive", title: "생성 실패" })
+      onError: (err: any) => {
+        console.error("create dashboard error", err);
+        console.error("error data", err?.data);
+        toast({
+          variant: "destructive",
+          title: "생성 실패",
+          description:
+            err?.data?.detail?.message ||
+            err?.data?.detail?.error ||
+            err?.data?.error ||
+            err?.message ||
+            "알 수 없는 오류",
+        });
+      }
     });
+    console.log("ownerToken:", ownerToken);
+    console.log("formattedData:", formattedData);
   };
 
   return (

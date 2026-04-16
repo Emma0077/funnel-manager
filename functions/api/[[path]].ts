@@ -186,7 +186,21 @@ app.post("/api/projects", async (c) => {
 
   if (!createRes.ok) {
     return c.json(
-      { error: "프로젝트 생성 실패", detail: createRes.data },
+      {
+        error: "대시보드 생성 실패",
+        detail: createRes.data,
+        requestBody: {
+          projectId,
+          title,
+          slug: finalSlug,
+          service_name: serviceName ?? null,
+          period_start: periodStart || null,
+          period_end: periodEnd || null,
+          created_by_token: createdByToken ?? null,
+          is_hidden: false,
+          stages: computedStages,
+        },
+      },
       createRes.status
     );
   }
@@ -349,8 +363,8 @@ app.post("/api/projects/:projectSlug/dashboards", async (c) => {
         title,
         slug: finalSlug,
         service_name: serviceName ?? null,
-        period_start: periodStart ?? null,
-        period_end: periodEnd ?? null,
+        period_start: periodStart || null,
+        period_end: periodEnd || null,
         created_by_token: createdByToken ?? null,
         is_hidden: false,
         stages: computedStages,
@@ -450,8 +464,8 @@ app.put("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
     body: JSON.stringify({
       title,
       service_name: serviceName ?? null,
-      period_start: periodStart ?? null,
-      period_end: periodEnd ?? null,
+      period_start: periodStart || null,
+      period_end: periodEnd || null,
       stages: computedStages,
       updated_at: new Date().toISOString(),
     }),

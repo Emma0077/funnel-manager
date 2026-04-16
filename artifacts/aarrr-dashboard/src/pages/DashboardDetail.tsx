@@ -29,7 +29,16 @@ export function DashboardDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const deleteDashboard = useDeleteDashboard();
+  const deleteDashboard = useDeleteDashboard({
+    request: {
+      headers: {
+        ...(ownerToken ? { "x-owner-token": ownerToken } : {}),
+        ...(localStorage.getItem("aarrr_admin_email")
+          ? { authorization: `Bearer ${localStorage.getItem("aarrr_admin_email")}` }
+          : {}),
+      },
+    },
+  });
 
   if (isLoading) {
     return (
@@ -53,21 +62,11 @@ export function DashboardDetail() {
   const handleDelete = async () => {
     if (!confirm("정말 이 대시보드를 삭제하시겠습니까?")) return;
   
-    const headers: Record<string, string> = {};
-    if (ownerToken) headers["x-owner-token"] = ownerToken;
-    const adminEmail = localStorage.getItem("aarrr_admin_email");
-    if (adminEmail) headers["authorization"] = `Bearer ${adminEmail}`;
-  
     try {
-      await deleteDashboard.mutateAsync(
-        {
-          projectSlug: pSlug,
-          dashboardSlug: dSlug,
-        },
-        {
-          request: { headers },
-        }
-      );
+      await deleteDashboard.mutateAsync({
+        projectSlug: pSlug,
+        dashboardSlug: dSlug,
+      });
   
       toast({ title: "대시보드가 삭제되었습니다." });
       queryClient.invalidateQueries({ queryKey: getListDashboardsQueryKey(pSlug) });
