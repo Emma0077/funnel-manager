@@ -7,18 +7,11 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 
 app.get("/api/projects", async (c) => {
   try {
-    const db = makeDb(c.env.DATABASE_URL);
-    const projects = await db.select().from(projectsTable);
-    return c.json({ ok: true, count: projects.length, projects });
+    const sql = postgres(c.env.DATABASE_URL, { ssl: "require", max: 1 });
+    const result = await sql`select 1 as ok`;
+    return c.json({ ok: true, result });
   } catch (err: any) {
-    return c.json(
-      {
-        ok: false,
-        message: err?.message ?? "unknown error",
-        stack: String(err?.stack ?? ""),
-      },
-      500
-    );
+    return c.json({ ok: false, message: err?.message, stack: String(err?.stack ?? "") }, 500);
   }
 });
 
