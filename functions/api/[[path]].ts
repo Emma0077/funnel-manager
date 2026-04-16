@@ -1,6 +1,29 @@
 import { Hono } from "hono";
 import { handle } from "hono/cloudflare-pages";
 
+function mapProject(p: any) {
+  return {
+    ...p,
+    isHidden: p.is_hidden,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+  };
+}
+
+function mapDashboard(d: any) {
+  return {
+    ...d,
+    projectId: d.project_id,
+    serviceName: d.service_name,
+    periodStart: d.period_start,
+    periodEnd: d.period_end,
+    createdByToken: d.created_by_token,
+    isHidden: d.is_hidden,
+    createdAt: d.created_at,
+    updatedAt: d.updated_at,
+  };
+}
+
 type Bindings = {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
