@@ -1,7 +1,6 @@
 import { useRoute, Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useGetDashboard, useGetProject, getListDashboardsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -162,6 +161,13 @@ export function DashboardDetail() {
     return `가장 이탈이 많은 "${prev} → ${worstStage.customLabel}" 구간을 우선적으로 개선해보세요. 해당 단계의 사용자 행동 데이터를 GA 이벤트 보고서에서 확인하는 것을 권장합니다.`;
   };
 
+function safeFormat(date: any, fmt: string) {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return "-";
+  return format(d, fmt);
+}
+  
   return (
     <MainLayout>
       <div className="max-w-5xl mx-auto space-y-5">
@@ -207,11 +213,11 @@ export function DashboardDetail() {
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-1">{dashboard.title}</h1>
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
-            <span>생성일: {format(new Date(dashboard.createdAt), 'yyyy년 MM월 dd일')}</span>
+            <span>생성일: {safeFormat(dashboard.createdAt ?? dashboard.created_at, 'yyyy년 MM월 dd일')}</span>
             {(dashboard.periodStart || dashboard.periodEnd) && (
               <span className="flex items-center gap-1 bg-white/60 border border-white/50 rounded-full px-2.5 py-0.5 font-medium">
                 <CalendarRange className="w-3 h-3" />
-                {dashboard.periodStart && format(new Date(dashboard.periodStart), 'yyyy.MM.dd')}
+                {dashboard.periodStart && safeFormat(dashboard.periodStart ?? dashboard.period_start, 'yyyy.MM.dd')}
                 {dashboard.periodStart && dashboard.periodEnd && " – "}
                 {dashboard.periodEnd && format(new Date(dashboard.periodEnd), 'yyyy.MM.dd')}
               </span>
