@@ -34,6 +34,7 @@ export function useAuth() {
       localStorage.setItem(ADMIN_KEY, email);
       _adminEmail = email;
       setIsAdmin(true);
+      window.location.reload();
       return true;
     }
     return false;
@@ -43,6 +44,7 @@ export function useAuth() {
     localStorage.removeItem(ADMIN_KEY);
     _adminEmail = null;
     setIsAdmin(false);
+    window.location.reload();
   };
 
   return { isAdmin, ownerToken, loginAdmin, logoutAdmin };
