@@ -146,7 +146,7 @@ app.get("/api/projects", async (c) => {
       })
     );
 
-    return c.json(withCounts);
+    return c.json(withCounts.map(mapProject));
   } catch (err: any) {
     return c.json(
       {
@@ -195,7 +195,7 @@ app.post("/api/projects", async (c) => {
     ? createRes.data[0]
     : createRes.data;
 
-  return c.json({ ...project, dashboardCount: 0 }, 201);
+  return c.json({ ...mapProject(project), dashboardCount: 0 }, 201);
 });
 
 app.get("/api/projects/:projectSlug", async (c) => {
@@ -217,7 +217,7 @@ app.get("/api/projects/:projectSlug", async (c) => {
   const dashboardCount =
     countRes.ok && Array.isArray(countRes.data) ? countRes.data.length : 0;
 
-  return c.json({ ...project, dashboardCount });
+  return c.json({ ...mapProject(project), dashboardCount });
 });
 
 app.put("/api/projects/:projectSlug", async (c) => {
@@ -256,7 +256,7 @@ app.put("/api/projects/:projectSlug", async (c) => {
   const dashboardCount =
     countRes.ok && Array.isArray(countRes.data) ? countRes.data.length : 0;
 
-  return c.json({ ...project, dashboardCount });
+  return c.json({ ...mapProject(project), dashboardCount });
 });
 
 app.delete("/api/projects/:projectSlug", async (c) => {
@@ -306,7 +306,8 @@ app.get("/api/projects/:projectSlug/dashboards", async (c) => {
     );
   }
 
-  return c.json(Array.isArray(dashboardsRes.data) ? dashboardsRes.data : []);
+  const dashboards = Array.isArray(dashboardsRes.data) ? dashboardsRes.data : [];
+  return c.json(dashboards.map(mapDashboard));
 });
 
 app.post("/api/projects/:projectSlug/dashboards", async (c) => {
@@ -368,7 +369,7 @@ app.post("/api/projects/:projectSlug/dashboards", async (c) => {
     ? createRes.data[0]
     : createRes.data;
 
-  return c.json(dashboard, 201);
+  return c.json(mapDashboard(dashboard), 201);
 });
 
 app.get("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
@@ -399,7 +400,7 @@ app.get("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
     return c.json({ error: "대시보드를 찾을 수 없습니다." }, 404);
   }
 
-  return c.json(dashboardRes.data[0]);
+  return c.json(mapDashboard(dashboardRes.data[0]));
 });
 
 app.put("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
@@ -467,7 +468,7 @@ app.put("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
     ? updateRes.data[0]
     : updateRes.data;
 
-  return c.json(dashboard);
+  return c.json(mapDashboard(dashboard));
 });
 
 app.delete("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
