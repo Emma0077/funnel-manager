@@ -59,15 +59,11 @@ export function DashboardDetail() {
     if (adminEmail) headers["authorization"] = `Bearer ${adminEmail}`;
   
     try {
-      await deleteDashboard.mutateAsync(
-        {
-          projectSlug: pSlug,
-          dashboardSlug: dSlug,
-        },
-        {
-          request: { headers },
-        }
-      );
+      await deleteDashboard.mutateAsync({
+        projectSlug: pSlug,
+        dashboardSlug: dSlug,
+        request: { headers },
+      });
   
       toast({ title: "대시보드가 삭제되었습니다." });
       queryClient.invalidateQueries({ queryKey: getListDashboardsQueryKey(pSlug) });
