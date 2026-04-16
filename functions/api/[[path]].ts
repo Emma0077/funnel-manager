@@ -450,8 +450,8 @@ app.put("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
     body: JSON.stringify({
       title,
       service_name: serviceName ?? null,
-      period_start: periodStart ?? null,
-      period_end: periodEnd ?? null,
+      period_start: periodStart || null,
+      period_end: periodEnd || null,
       stages: computedStages,
       updated_at: new Date().toISOString(),
     }),
