@@ -19,3 +19,13 @@ export const onRequest = handle(app);
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { projectsTable, dashboardsTable } from "../../lib/db/src/schema";
+
+function makeDb(databaseUrl: string) {
+  const client = postgres(databaseUrl, { ssl: "require", max: 1 });
+  return drizzle(client);
+}
+
+app.get("/api/health", async (c) => {
+  const db = makeDb(c.env.DATABASE_URL);
+  return c.json({ status: "ok", db: !!db });
+});
