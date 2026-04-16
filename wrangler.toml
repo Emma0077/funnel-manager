@@ -5,7 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "artifacts/aarrr-dashboard/dist"
 
 [vars]
-DATABASE_URL = "postgresql://postgres.qdheqnyygvcxibwogasd:rXxW8ZO3s6QHyLGo@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres"
+SUPABASE_URL=https://qdheqnyygvcxibwogasd.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkaGVxbnl5Z3ZjeGlid29nYXNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NTI3NDAsImV4cCI6MjA5MTEyODc0MH0.AhjNhBCNV2EOAaQLwjE6c7aOFi4b3gngAYp1AWrZRRE
 ADMIN_EMAIL = "admin@growthcamp.site"
 PORT = "3000"
 BASE_PATH = "/"
