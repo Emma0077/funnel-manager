@@ -33,12 +33,31 @@ function generateSlug(name: string): string {
   );
 }
 
-function supabaseHeaders(c: any, extra?: Record<string, string>) {
+function computeStages(stages: any[]): any[] {
+  return stages.map((stage, idx) => {
+    const prev = stages[idx - 1];
+    let conversionRate = stage.conversionRate ?? null;
+    let dropOffRate = stage.dropOffRate ?? null;
+
+    if (idx > 0 && prev && prev.metricValue && stage.metricValue != null) {
+      if (conversionRate === null) {
+        conversionRate =
+          Math.round((stage.metricValue / prev.metricValue) * 1000) / 10;
+      }
+      if (dropOffRate === null) {
+        dropOffRate = Math.round((100 - conversionRate) * 10) / 10;
+      }
+    }
+
+    return { ...stage, conversionRate, dropOffRate };
+  });
+}
+
+function supabaseHeaders(c: any) {
   return {
     apikey: c.env.SUPABASE_ANON_KEY,
     Authorization: `Bearer ${c.env.SUPABASE_ANON_KEY}`,
     "Content-Type": "application/json",
-    ...extra,
   };
 }
 
@@ -57,6 +76,7 @@ async function sb(c: any, path: string, init?: RequestInit) {
   });
 
   const text = await res.text();
+
   let data: any = null;
   try {
     data = text ? JSON.parse(text) : null;
@@ -73,37 +93,47 @@ async function sb(c: any, path: string, init?: RequestInit) {
 
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
+// Projects
 app.get("/api/projects", async (c) => {
-  const projectsRes = await sb(
-    c,
-    `/projects?select=*&order=created_at.asc`
-  );
+  try {
+    const projectsRes = await sb(c, `/projects?select=*&order=created_at.asc`);
 
-  if (!projectsRes.ok) {
+    if (!projectsRes.ok) {
+      return c.json(
+        { error: "프로젝트 조회 실패", detail: projectsRes.data },
+        projectsRes.status
+      );
+    }
+
+    const projects = Array.isArray(projectsRes.data) ? projectsRes.data : [];
+
+    const withCounts = await Promise.all(
+      projects.map(async (p: any) => {
+        const countRes = await sb(
+          c,
+          `/dashboards?project_id=eq.${p.id}&select=id`
+        );
+
+        const count =
+          countRes.ok && Array.isArray(countRes.data)
+            ? countRes.data.length
+            : 0;
+
+        return { ...p, dashboardCount: count };
+      })
+    );
+
+    return c.json(withCounts);
+  } catch (err: any) {
     return c.json(
-      { error: "프로젝트 조회 실패", detail: projectsRes.data },
+      {
+        error: "Unhandled exception in /api/projects",
+        message: err?.message ?? "unknown error",
+        stack: String(err?.stack ?? ""),
+      },
       500
     );
   }
-
-  const projects = Array.isArray(projectsRes.data) ? projectsRes.data : [];
-
-  const withCounts = await Promise.all(
-    projects.map(async (p: any) => {
-      const countRes = await sb(
-        c,
-        `/dashboards?project_id=eq.${p.id}&select=id`
-      );
-
-      const count = countRes.ok && Array.isArray(countRes.data)
-        ? countRes.data.length
-        : 0;
-
-      return { ...p, dashboardCount: count };
-    })
-  );
-
-  return c.json(withCounts);
 });
 
 app.post("/api/projects", async (c) => {
@@ -138,215 +168,338 @@ app.post("/api/projects", async (c) => {
     );
   }
 
-  const project = Array.isArray(createRes.data) ? createRes.data[0] : createRes.data;
+  const project = Array.isArray(createRes.data)
+    ? createRes.data[0]
+    : createRes.data;
+
   return c.json({ ...project, dashboardCount: 0 }, 201);
 });
 
-export const onRequest = handle(app);
+app.get("/api/projects/:projectSlug", async (c) => {
+  const { projectSlug } = c.req.param();
 
-app.patch("/api/projects/:slug", async (c) => {
+  const res = await sb(c, `/projects?slug=eq.${projectSlug}&select=*`);
+
+  if (!res.ok || !Array.isArray(res.data) || res.data.length === 0) {
+    return c.json({ error: "프로젝트를 찾을 수 없습니다." }, 404);
+  }
+
+  const project = res.data[0];
+
+  const countRes = await sb(
+    c,
+    `/dashboards?project_id=eq.${project.id}&select=id`
+  );
+
+  const dashboardCount =
+    countRes.ok && Array.isArray(countRes.data) ? countRes.data.length : 0;
+
+  return c.json({ ...project, dashboardCount });
+});
+
+app.put("/api/projects/:projectSlug", async (c) => {
   const adminEmail = c.env.ADMIN_EMAIL ?? "admin@growthcamp.site";
   if (!isAdmin(c, adminEmail)) {
     return c.json({ error: "관리자만 프로젝트를 수정할 수 있습니다." }, 403);
   }
 
-  try {
-    const slug = c.req.param("slug");
-    const body = await c.req.json();
-    const { name, description, isHidden } = body;
+  const { projectSlug } = c.req.param();
+  const body = await c.req.json();
+  const { name, description, isHidden } = body;
 
-    const updatePayload: Record<string, any> = {};
+  const res = await sb(c, `/projects?slug=eq.${projectSlug}`, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      name,
+      description: description ?? null,
+      is_hidden: isHidden ?? false,
+    }),
+  });
 
-    if (name !== undefined) updatePayload.name = name;
-    if (description !== undefined) updatePayload.description = description ?? null;
-    if (isHidden !== undefined) updatePayload.is_hidden = isHidden;
-
-    const updateRes = await sb(
-      c,
-      `/projects?slug=eq.${encodeURIComponent(slug)}`,
-      {
-        method: "PATCH",
-        headers: {
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify(updatePayload),
-      }
-    );
-
-    if (!updateRes.ok) {
-      return c.json(
-        { error: "프로젝트 수정 실패", detail: updateRes.data },
-        updateRes.status
-      );
-    }
-
-    const project = Array.isArray(updateRes.data)
-      ? updateRes.data[0]
-      : updateRes.data;
-
-    if (!project) {
-      return c.json({ error: "수정할 프로젝트를 찾을 수 없습니다." }, 404);
-    }
-
-    const countRes = await sb(
-      c,
-      `/dashboards?project_id=eq.${project.id}&select=id`
-    );
-
-    const dashboardCount =
-      countRes.ok && Array.isArray(countRes.data)
-        ? countRes.data.length
-        : 0;
-
-    return c.json({ ...project, dashboardCount });
-  } catch (err: any) {
-    return c.json(
-      {
-        error: "프로젝트 수정 중 예외 발생",
-        detail: err?.message ?? String(err),
-        stack: err?.stack ?? null,
-      },
-      500
-    );
+  if (!res.ok || !Array.isArray(res.data) || res.data.length === 0) {
+    return c.json({ error: "프로젝트 수정 실패", detail: res.data }, 500);
   }
+
+  const project = res.data[0];
+
+  const countRes = await sb(
+    c,
+    `/dashboards?project_id=eq.${project.id}&select=id`
+  );
+
+  const dashboardCount =
+    countRes.ok && Array.isArray(countRes.data) ? countRes.data.length : 0;
+
+  return c.json({ ...project, dashboardCount });
 });
 
-app.delete("/api/projects/:slug", async (c) => {
+app.delete("/api/projects/:projectSlug", async (c) => {
   const adminEmail = c.env.ADMIN_EMAIL ?? "admin@growthcamp.site";
   if (!isAdmin(c, adminEmail)) {
     return c.json({ error: "관리자만 프로젝트를 삭제할 수 있습니다." }, 403);
   }
 
-  try {
-    const slug = c.req.param("slug");
+  const { projectSlug } = c.req.param();
 
-    // 1) 프로젝트 조회
-    const projectRes = await sb(
-      c,
-      `/projects?slug=eq.${encodeURIComponent(slug)}&select=id,name,slug`
-    );
+  const res = await sb(c, `/projects?slug=eq.${projectSlug}`, {
+    method: "DELETE",
+  });
 
-    if (!projectRes.ok) {
-      return c.json(
-        { error: "삭제 대상 프로젝트 조회 실패", detail: projectRes.data },
-        projectRes.status
-      );
-    }
-
-    const project = Array.isArray(projectRes.data)
-      ? projectRes.data[0]
-      : projectRes.data;
-
-    if (!project) {
-      return c.json({ error: "삭제할 프로젝트를 찾을 수 없습니다." }, 404);
-    }
-
-    // 2) 관련 dashboards 먼저 삭제
-    const dashboardsDeleteRes = await sb(
-      c,
-      `/dashboards?project_id=eq.${project.id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Prefer: "return=representation",
-        },
-      }
-    );
-
-    if (!dashboardsDeleteRes.ok) {
-      return c.json(
-        {
-          error: "관련 대시보드 삭제 실패",
-          detail: dashboardsDeleteRes.data,
-        },
-        dashboardsDeleteRes.status
-      );
-    }
-
-    // 3) 프로젝트 삭제
-    const deleteRes = await sb(
-      c,
-      `/projects?slug=eq.${encodeURIComponent(slug)}`,
-      {
-        method: "DELETE",
-        headers: {
-          Prefer: "return=representation",
-        },
-      }
-    );
-
-    if (!deleteRes.ok) {
-      return c.json(
-        { error: "프로젝트 삭제 실패", detail: deleteRes.data },
-        deleteRes.status
-      );
-    }
-
-    return c.json({
-      success: true,
-      deletedProject: project,
-    });
-  } catch (err: any) {
-    return c.json(
-      {
-        error: "프로젝트 삭제 중 예외 발생",
-        detail: err?.message ?? String(err),
-        stack: err?.stack ?? null,
-      },
-      500
-    );
+  if (!res.ok) {
+    return c.json({ error: "삭제 실패", detail: res.data }, res.status);
   }
+
+  return c.json({ success: true });
 });
 
+// Dashboards
 app.get("/api/projects/:projectSlug/dashboards", async (c) => {
-  try {
-    const projectSlug = c.req.param("projectSlug");
+  const { projectSlug } = c.req.param();
 
-    const projectRes = await sb(
-      c,
-      `/projects?slug=eq.${encodeURIComponent(projectSlug)}&select=id,name,slug,is_hidden`
-    );
+  const projectRes = await sb(c, `/projects?slug=eq.${projectSlug}&select=id`);
 
-    if (!projectRes.ok) {
-      return c.json(
-        { error: "프로젝트 조회 실패", detail: projectRes.data },
-        projectRes.status
-      );
-    }
+  if (
+    !projectRes.ok ||
+    !Array.isArray(projectRes.data) ||
+    projectRes.data.length === 0
+  ) {
+    return c.json({ error: "프로젝트를 찾을 수 없습니다." }, 404);
+  }
 
-    const project = Array.isArray(projectRes.data)
-      ? projectRes.data[0]
-      : projectRes.data;
+  const projectId = projectRes.data[0].id;
 
-    if (!project) {
-      return c.json({ error: "프로젝트를 찾을 수 없습니다." }, 404);
-    }
+  const dashboardsRes = await sb(
+    c,
+    `/dashboards?project_id=eq.${projectId}&select=*&order=created_at.asc`
+  );
 
-    const dashboardsRes = await sb(
-      c,
-      `/dashboards?project_id=eq.${project.id}&select=*&order=created_at.asc`
-    );
-
-    if (!dashboardsRes.ok) {
-      return c.json(
-        { error: "대시보드 조회 실패", detail: dashboardsRes.data },
-        dashboardsRes.status
-      );
-    }
-
-    const dashboards = Array.isArray(dashboardsRes.data)
-      ? dashboardsRes.data
-      : [];
-
-    return c.json(dashboards);
-  } catch (err: any) {
+  if (!dashboardsRes.ok) {
     return c.json(
-      {
-        error: "대시보드 조회 중 예외 발생",
-        detail: err?.message ?? String(err),
-        stack: err?.stack ?? null,
-      },
-      500
+      { error: "대시보드 조회 실패", detail: dashboardsRes.data },
+      dashboardsRes.status
     );
   }
+
+  return c.json(Array.isArray(dashboardsRes.data) ? dashboardsRes.data : []);
 });
+
+app.post("/api/projects/:projectSlug/dashboards", async (c) => {
+  const { projectSlug } = c.req.param();
+
+  const projectRes = await sb(c, `/projects?slug=eq.${projectSlug}&select=id`);
+
+  if (
+    !projectRes.ok ||
+    !Array.isArray(projectRes.data) ||
+    projectRes.data.length === 0
+  ) {
+    return c.json({ error: "프로젝트를 찾을 수 없습니다." }, 404);
+  }
+
+  const projectId = projectRes.data[0].id;
+  const body = await c.req.json();
+  const {
+    title,
+    slug,
+    serviceName,
+    periodStart,
+    periodEnd,
+    createdByToken,
+    stages,
+  } = body;
+
+  const finalSlug = slug || generateSlug(title);
+  const computedStages = computeStages(stages || []);
+
+  const createRes = await sb(c, `/dashboards`, {
+    method: "POST",
+    headers: {
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify([
+      {
+        project_id: projectId,
+        title,
+        slug: finalSlug,
+        service_name: serviceName ?? null,
+        period_start: periodStart ?? null,
+        period_end: periodEnd ?? null,
+        created_by_token: createdByToken ?? null,
+        is_hidden: false,
+        stages: computedStages,
+      },
+    ]),
+  });
+
+  if (!createRes.ok) {
+    return c.json(
+      { error: "대시보드 생성 실패", detail: createRes.data },
+      createRes.status
+    );
+  }
+
+  const dashboard = Array.isArray(createRes.data)
+    ? createRes.data[0]
+    : createRes.data;
+
+  return c.json(dashboard, 201);
+});
+
+app.get("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
+  const { projectSlug, dashboardSlug } = c.req.param();
+
+  const projectRes = await sb(c, `/projects?slug=eq.${projectSlug}&select=id`);
+
+  if (
+    !projectRes.ok ||
+    !Array.isArray(projectRes.data) ||
+    projectRes.data.length === 0
+  ) {
+    return c.json({ error: "프로젝트를 찾을 수 없습니다." }, 404);
+  }
+
+  const projectId = projectRes.data[0].id;
+
+  const dashboardRes = await sb(
+    c,
+    `/dashboards?project_id=eq.${projectId}&slug=eq.${dashboardSlug}&select=*`
+  );
+
+  if (
+    !dashboardRes.ok ||
+    !Array.isArray(dashboardRes.data) ||
+    dashboardRes.data.length === 0
+  ) {
+    return c.json({ error: "대시보드를 찾을 수 없습니다." }, 404);
+  }
+
+  return c.json(dashboardRes.data[0]);
+});
+
+app.put("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
+  const { projectSlug, dashboardSlug } = c.req.param();
+
+  const projectRes = await sb(c, `/projects?slug=eq.${projectSlug}&select=id`);
+
+  if (
+    !projectRes.ok ||
+    !Array.isArray(projectRes.data) ||
+    projectRes.data.length === 0
+  ) {
+    return c.json({ error: "프로젝트를 찾을 수 없습니다." }, 404);
+  }
+
+  const projectId = projectRes.data[0].id;
+
+  const existingRes = await sb(
+    c,
+    `/dashboards?project_id=eq.${projectId}&slug=eq.${dashboardSlug}&select=*`
+  );
+
+  if (
+    !existingRes.ok ||
+    !Array.isArray(existingRes.data) ||
+    existingRes.data.length === 0
+  ) {
+    return c.json({ error: "대시보드를 찾을 수 없습니다." }, 404);
+  }
+
+  const existing = existingRes.data[0];
+  const adminEmail = c.env.ADMIN_EMAIL ?? "admin@growthcamp.site";
+  const body = await c.req.json();
+  const { title, serviceName, periodStart, periodEnd, ownerToken, stages } = body;
+
+  if (!isAdmin(c, adminEmail) && ownerToken !== existing.created_by_token) {
+    return c.json({ error: "이 대시보드를 수정할 권한이 없습니다." }, 403);
+  }
+
+  const computedStages = computeStages(stages || []);
+
+  const updateRes = await sb(c, `/dashboards?id=eq.${existing.id}`, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      title,
+      service_name: serviceName ?? null,
+      period_start: periodStart ?? null,
+      period_end: periodEnd ?? null,
+      stages: computedStages,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+
+  if (!updateRes.ok) {
+    return c.json(
+      { error: "대시보드 수정 실패", detail: updateRes.data },
+      updateRes.status
+    );
+  }
+
+  const dashboard = Array.isArray(updateRes.data)
+    ? updateRes.data[0]
+    : updateRes.data;
+
+  return c.json(dashboard);
+});
+
+app.delete("/api/projects/:projectSlug/dashboards/:dashboardSlug", async (c) => {
+  const { projectSlug, dashboardSlug } = c.req.param();
+
+  const projectRes = await sb(c, `/projects?slug=eq.${projectSlug}&select=id`);
+
+  if (
+    !projectRes.ok ||
+    !Array.isArray(projectRes.data) ||
+    projectRes.data.length === 0
+  ) {
+    return c.json({ error: "프로젝트를 찾을 수 없습니다." }, 404);
+  }
+
+  const projectId = projectRes.data[0].id;
+
+  const existingRes = await sb(
+    c,
+    `/dashboards?project_id=eq.${projectId}&slug=eq.${dashboardSlug}&select=*`
+  );
+
+  if (
+    !existingRes.ok ||
+    !Array.isArray(existingRes.data) ||
+    existingRes.data.length === 0
+  ) {
+    return c.json({ error: "대시보드를 찾을 수 없습니다." }, 404);
+  }
+
+  const existing = existingRes.data[0];
+  const adminEmail = c.env.ADMIN_EMAIL ?? "admin@growthcamp.site";
+  const adminUser = isAdmin(c, adminEmail);
+  const ownerToken = c.req.header("x-owner-token");
+
+  if (!adminUser && !ownerToken) {
+    return c.json({ error: "삭제 권한이 없습니다." }, 403);
+  }
+
+  if (!adminUser && ownerToken !== existing.created_by_token) {
+    return c.json({ error: "본인이 만든 대시보드만 삭제할 수 있습니다." }, 403);
+  }
+
+  const deleteRes = await sb(c, `/dashboards?id=eq.${existing.id}`, {
+    method: "DELETE",
+  });
+
+  if (!deleteRes.ok) {
+    return c.json(
+      { error: "대시보드 삭제 실패", detail: deleteRes.data },
+      deleteRes.status
+    );
+  }
+
+  return c.json({ success: true });
+});
+
+export const onRequest = handle(app);
