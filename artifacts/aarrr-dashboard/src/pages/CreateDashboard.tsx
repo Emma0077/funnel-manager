@@ -32,10 +32,16 @@ export function CreateDashboard() {
       },
       onError: (err: any) => {
         console.error("create dashboard error", err);
+        console.error("error data", err?.data);
         toast({
           variant: "destructive",
           title: "생성 실패",
-          description: err?.data?.error || err?.data?.detail?.message || err?.message || "알 수 없는 오류",
+          description:
+            err?.data?.detail?.message ||
+            err?.data?.detail?.error ||
+            err?.data?.error ||
+            err?.message ||
+            "알 수 없는 오류",
         });
       }
     });
